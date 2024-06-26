@@ -1,0 +1,4 @@
+<?jelly escape-by-default='true'?>
+<div>
+    This plugin enables scanning of IaC files, container images and directories using the Wiz CLI.
+</div>

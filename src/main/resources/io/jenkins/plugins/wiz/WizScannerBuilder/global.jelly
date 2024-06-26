@@ -1,0 +1,20 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <!--
+      This Jelly script is used to produce the global configuration option.
+    -->
+    <f:section title="Wiz">
+        <f:entry title="Client ID" field="wizClientId">
+            <f:textbox />
+        </f:entry>
+        <f:entry title="Secret Key" field="wizSecretKey">
+            <f:password />
+        </f:entry>
+        <f:entry title="Wiz CLI link" field="wizCliURL">
+            <f:textbox />
+        </f:entry>
+        <f:entry title="Wiz Environment (GovCloud/FedRAMP only)" field="wizEnv">
+            <f:textbox />
+        </f:entry>
+    </f:section>
+</j:jelly>
