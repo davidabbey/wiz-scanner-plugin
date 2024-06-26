@@ -1,4 +1,4 @@
-# Wiz Jenkins Plugin 
+# Wiz Scanner Plugin 
 
 ## Introduction
 
