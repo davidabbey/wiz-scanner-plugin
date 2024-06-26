@@ -1,6 +1,5 @@
 target
 test
-.mvn
 
 # mvn hpi:run
 work
@@ -15,3 +14,4 @@ work
 .settings
 .classpath
 .project
+/.mvn/
