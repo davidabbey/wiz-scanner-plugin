@@ -45,6 +45,12 @@ Provide full custom command-line arguments.
 
 Once the Wiz Scanner build step is added, it will produce a Wiz Scanner result page.
 
+## Contributing
+
+To contribute to this repository, please review the [CONTRIBUTING](CONTRIBUTING.md) file.
+
+Also, please refer to the Jenkins [contribution guidelines](https://github.com/jenkinsci/.github/blob/master/CONTRIBUTING.md)
+
 ## LICENSE
 
 Licensed under MIT, see [LICENSE](LICENSE.md)
