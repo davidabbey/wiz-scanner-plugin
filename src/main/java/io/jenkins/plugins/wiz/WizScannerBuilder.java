@@ -15,128 +15,203 @@ import hudson.util.FormValidation;
 import hudson.util.Secret;
 import java.io.File;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import jenkins.tasks.SimpleBuildStep;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
+import org.jetbrains.annotations.NotNull;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
 public class WizScannerBuilder extends Builder implements SimpleBuildStep {
+    private static final Logger LOGGER = Logger.getLogger(WizScannerBuilder.class.getName());
+    private static final String DEFAULT_ARTIFACT_NAME = "wizscan.json";
+    private static final String ARTIFACT_PREFIX = "wizscan-";
+    private static final String ARTIFACT_SUFFIX = ".json";
+
+    public static final int OK_CODE = 0;
+    private static volatile int buildId; // Made volatile for thread safety
+    private static volatile int count;
+
     private final String userInput;
 
     @DataBoundConstructor
     public WizScannerBuilder(String userInput) {
-        this.userInput = userInput;
+        this.userInput = StringUtils.trimToEmpty(userInput);
     }
-
-    public static final int OK_CODE = 0;
-    private static int buildId;
-    private static int count;
 
     public String getUserInput() {
         return userInput;
     }
 
-    public static synchronized void setBuildId(int buildId) {
-        WizScannerBuilder.buildId = buildId;
+    private static synchronized int getNextCount() {
+        return ++count;
     }
 
-    public static synchronized void setCount(int count) {
-        WizScannerBuilder.count = count;
+    private static synchronized void resetCount() {
+        count = 1;
+    }
+
+    /**
+     * Validates the global configuration parameters
+     * @param wizClientId The Wiz client ID
+     * @param wizSecretKey The Wiz secret key
+     * @param wizCliURL The Wiz CLI URL
+     * @throws AbortException if any required parameter is missing
+     */
+    private void validateConfiguration(String wizClientId, Secret wizSecretKey, String wizCliURL) throws AbortException {
+        if (StringUtils.isBlank(wizClientId)) {
+            throw new AbortException("Wiz Client ID is required");
+        }
+        if (wizSecretKey == null || StringUtils.isBlank(Secret.toString(wizSecretKey))) {
+            throw new AbortException("Wiz Secret Key is required");
+        }
+        if (StringUtils.isBlank(wizCliURL)) {
+            throw new AbortException("Wiz CLI URL is required");
+        }
+    }
+
+    /**
+     * Determines the artifact name based on build context
+     */
+    private static class ArtifactInfo {
+        final String name;
+        final String suffix;
+
+        ArtifactInfo(String name, String suffix) {
+            this.name = name;
+            this.suffix = suffix;
+        }
+    }
+
+    private ArtifactInfo determineArtifactName(int currentBuildId) {
+        if (currentBuildId != buildId) {
+            buildId = currentBuildId;
+            resetCount();
+            return new ArtifactInfo(DEFAULT_ARTIFACT_NAME, null);
+        }
+        String suffix = String.valueOf(getNextCount());
+        return new ArtifactInfo(ARTIFACT_PREFIX + suffix + ARTIFACT_SUFFIX, suffix);
     }
 
     @Override
-    public void perform(Run<?, ?> build, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
-            throws InterruptedException, IOException {
-        EnvVars envVars = build.getEnvironment(listener);
-        String wizClientId = getDescriptor().getWizClientId();
-        Secret wizSecretKey = getDescriptor().getWizSecretKey();
-        String wizCliURL = getDescriptor().getWizCliURL();
-        String wizEnv = getDescriptor().getWizEnv();
-        if (wizClientId == null
-                || wizClientId.trim().isEmpty()
-                || wizSecretKey == null
-                || Secret.toString(wizSecretKey).trim().isEmpty()
-                || wizCliURL == null
-                || wizCliURL.trim().isEmpty()) {
-            throw new AbortException(
-                    "Missing configuration. Please set the global configuration parameters in The \"Wiz\" section under  \"Manage Jenkins -> System\", before continuing.\n");
-        }
+    public void perform(@NotNull Run<?, ?> build, @NotNull FilePath workspace, @NotNull EnvVars env,
+                        @NotNull Launcher launcher, @NotNull TaskListener listener) throws InterruptedException, IOException {
+        try {
+            LOGGER.log(Level.FINE, "Starting Wiz Scanner build step for build {0}", build.getDisplayName());
 
-        if (wizEnv != null && !wizEnv.isEmpty()) {
+            // Get configuration
+            DescriptorImpl descriptor = getDescriptor();
+            EnvVars envVars = build.getEnvironment(listener);
+
+            // Validate configuration
+            validateConfiguration(
+                    descriptor.getWizClientId(),
+                    descriptor.getWizSecretKey(),
+                    descriptor.getWizCliURL()
+            );
+
+            // Set environment variables
+            setupEnvironment(envVars, descriptor.getWizEnv());
+
+            // Determine artifact names
+            ArtifactInfo artifactInfo = determineArtifactName(build.hashCode());
+
+            // Execute scan
+            int exitCode = executeScan(build, workspace, envVars, launcher, listener, descriptor, artifactInfo);
+
+            // Process results
+            processResults(build, exitCode, workspace, listener, artifactInfo);
+
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error during Wiz scan execution", e);
+            throw new AbortException("Wiz scan failed: " + e.getMessage());
+        }
+    }
+
+    private void setupEnvironment(EnvVars envVars, String wizEnv) {
+        if (StringUtils.isNotBlank(wizEnv)) {
             envVars.put("WIZ_ENV", wizEnv);
+            LOGGER.log(Level.FINE, "Set WIZ_ENV to {0}", wizEnv);
         }
+    }
 
-        // Support unique names for artifacts when there are multiple steps in the same build
-        String artifactSuffix, artifactName;
-        if (build.hashCode() != buildId) {
-            // New build
-            setBuildId(build.hashCode());
-            setCount(1);
-            artifactSuffix = null; // When there is only one step, there should be no suffix at all
-            artifactName = "wizscan.json";
-        } else {
-            setCount(count + 1);
-            artifactSuffix = Integer.toString(count);
-            artifactName = "wizscan-" + artifactSuffix + ".json";
-        }
+    private int executeScan(
+            Run<?, ?> build,
+            FilePath workspace,
+            EnvVars envVars,
+            Launcher launcher,
+            TaskListener listener,
+            DescriptorImpl descriptor,
+            ArtifactInfo artifactInfo) throws IOException, InterruptedException {
 
-        int exitCode = WizScannerExecuter.execute(
+        LOGGER.log(Level.FINE, "Executing Wiz scan with artifact name: {0}", artifactInfo.name);
+
+        return WizScannerExecuter.execute(
                 build,
                 workspace,
                 envVars,
                 launcher,
                 listener,
-                wizCliURL,
-                wizClientId,
-                wizSecretKey,
+                descriptor.getWizCliURL(),
+                descriptor.getWizClientId(),
+                descriptor.getWizSecretKey(),
                 userInput,
-                artifactName);
-        build.addAction(new WizScannerAction(build, workspace, artifactSuffix, artifactName));
-        System.out.println("exitCode: " + exitCode);
-        String failedMessage = "Scanning failed.";
-        cleanupArtifacts(build, workspace, listener, artifactName);
-        switch (exitCode) {
-            case OK_CODE:
-                System.out.println("Scanning success.");
-                break;
-            default:
-                // This exception causes the message to appear in the Jenkins console
-                throw new AbortException(failedMessage);
-        }
+                artifactInfo.name);
     }
 
-    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE") // No idea why this is needed
-    private void cleanupArtifacts(Run<?, ?> build, FilePath workspace, TaskListener listener, String artifactName)
-            throws java.lang.InterruptedException {
+    private void processResults(
+            Run<?, ?> build,
+            int exitCode,
+            FilePath workspace,
+            TaskListener listener,
+            ArtifactInfo artifactInfo) throws IOException, InterruptedException {
 
-        // Cleanup: delete created files
+        build.addAction(new WizScannerAction(build, workspace, artifactInfo.suffix, artifactInfo.name));
+
         try {
-            listener.getLogger().println("Cleaning up temporary files...");
-            FilePath outputFile = new FilePath(new File(build.getRootDir(), "wizcli_output"));
-            FilePath stderrFile = new FilePath(new File(build.getRootDir(), "wizcli_err_output"));
-            FilePath artifactFile = new FilePath(workspace, artifactName);
-            FilePath wizcliFile = new FilePath(workspace, "wizcli");
-
-            if (outputFile.exists()) {
-                outputFile.delete();
-            }
-            if (stderrFile.exists()) {
-                stderrFile.delete();
-            }
-            if (artifactFile.exists()) {
-                artifactFile.delete();
-            }
-            if (wizcliFile.exists()) {
-                wizcliFile.delete();
-            }
-
-            listener.getLogger().println("Temporary files deleted.");
+            cleanupArtifacts(build, workspace, listener, artifactInfo.name);
         } catch (Exception e) {
-            listener.getLogger().println("Error during cleanup: " + e.toString());
+            LOGGER.log(Level.WARNING, "Error during artifact cleanup", e);
         }
+
+        if (exitCode != OK_CODE) {
+            throw new AbortException("Wiz scanning failed with exit code: " + exitCode);
+        }
+
+        LOGGER.log(Level.INFO, "Wiz scan completed successfully");
+    }
+
+    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
+    private void cleanupArtifacts(Run<?, ?> build, FilePath workspace, TaskListener listener, String artifactName)
+            throws InterruptedException {
+
+        FilePath[] filesToClean = {
+                new FilePath(new File(build.getRootDir(), "wizcli_output")),
+                new FilePath(new File(build.getRootDir(), "wizcli_err_output")),
+                new FilePath(workspace, artifactName),
+                new FilePath(workspace, "wizcli")
+        };
+
+        listener.getLogger().println("Cleaning up temporary files...");
+
+        for (FilePath file : filesToClean) {
+            try {
+                if (file.exists()) {
+                    file.delete();
+                    LOGGER.log(Level.FINE, "Deleted file: {0}", file.getRemote());
+                }
+            } catch (IOException e) {
+                LOGGER.log(Level.WARNING, "Failed to delete file: " + file.getRemote(), e);
+                listener.getLogger().println("Warning: Failed to delete " + file.getRemote());
+            }
+        }
+
+        listener.getLogger().println("Temporary files cleanup completed");
     }
 
     @Override
@@ -153,8 +228,9 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
         private String wizEnv;
 
         public FormValidation doCheckUserInput(@QueryParameter String value) throws IOException, ServletException {
-            if (value.isEmpty())
+            if (StringUtils.isBlank(value)) {
                 return FormValidation.error(Messages.WizScannerBuilder_DescriptorImpl_errors_missingName());
+            }
             return FormValidation.ok();
         }
 
@@ -170,8 +246,6 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
 
         @Override
         public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
-            // To persist global configuration information,
-            // set that to properties and call save().
             wizClientId = formData.getString("wizClientId");
             wizSecretKey = Secret.fromString(formData.getString("wizSecretKey"));
             wizCliURL = formData.getString("wizCliURL");
@@ -180,6 +254,7 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
             return super.configure(req, formData);
         }
 
+        // Getters
         public String getWizClientId() {
             return wizClientId;
         }

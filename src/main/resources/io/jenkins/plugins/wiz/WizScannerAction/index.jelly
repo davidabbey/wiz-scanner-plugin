@@ -58,9 +58,9 @@
                             <div class="section">
                                 <strong>Scan exit code</strong>
                                 <span class="
-                                    ${it.scanDetails.getStatus() == 'Passed' ? 'status passed' : ''}
-                                    ${it.scanDetails.getStatus() == 'Warned' ? 'status warned' : ''}
-                                    ${it.scanDetails.getStatus() == 'Failed' ? 'status failed' : ''}">
+                                        ${it.scanDetails.getStatus().matches('Passed') ? 'status passed' : ''}
+                                        ${it.scanDetails.getStatus().matches('Warned') ? 'status warned' : ''}
+                                        ${it.scanDetails.getStatus().matches('Failed') ? 'status failed' : ''}">
                                     ${it.scanDetails.getStatus()}
                                 </span>
                             </div>
@@ -107,10 +107,10 @@
                                             </div>
                                             Misconfigurations
                                         </td>
-                                        <td><span class="severity-count">${it.scanDetails.getScanStatistics().getCriticalMatches()}</span><span class="severity-icon critical">C</span></td>
-                                        <td><span class="severity-count">${it.scanDetails.getScanStatistics().getHighMatches()}</span><span class="severity-icon high">H</span></td>
-                                        <td><span class="severity-count">${it.scanDetails.getScanStatistics().getMediumMatches()}</span><span class="severity-icon medium">M</span></td>
-                                        <td><span class="severity-count">${it.scanDetails.getScanStatistics().getLowMatches()}</span><span class="severity-icon low">L</span></td>
+                                        <td><span class="severity-count">${it.scanDetails.getScanStatisticsCriticalMatches()}</span><span class="severity-icon critical">C</span></td>
+                                        <td><span class="severity-count">${it.scanDetails.getScanStatisticsHighMatches()}</span><span class="severity-icon high">H</span></td>
+                                        <td><span class="severity-count">${it.scanDetails.getScanStatisticsMediumMatches()}</span><span class="severity-icon medium">M</span></td>
+                                        <td><span class="severity-count">${it.scanDetails.getScanStatisticsLowMatches()}</span><span class="severity-icon low">L</span></td>
                                     </tr>
                                     <tr>
                                         <td>
@@ -120,10 +120,10 @@
                                             </div>
                                             Vulnerabilities
                                         </td>
-                                        <td><span class="severity-count">${it.scanDetails.getVulnerabilities().getCriticalCount()}</span><span class="severity-icon critical">C</span></td>
-                                        <td><span class="severity-count">${it.scanDetails.getVulnerabilities().getHighCount()}</span><span class="severity-icon high">H</span></td>
-                                        <td><span class="severity-count">${it.scanDetails.getVulnerabilities().getMediumCount()}</span><span class="severity-icon medium">M</span></td>
-                                        <td><span class="severity-count">${it.scanDetails.getVulnerabilities().getLowCount()}</span><span class="severity-icon low">L</span></td>
+                                        <td><span class="severity-count">${it.scanDetails.getVulnerabilitiesCriticalCount()}</span><span class="severity-icon critical">C</span></td>
+                                        <td><span class="severity-count">${it.scanDetails.getVulnerabilitiesHighCount()}</span><span class="severity-icon high">H</span></td>
+                                        <td><span class="severity-count">${it.scanDetails.getVulnerabilitiesMediumCount()}</span><span class="severity-icon medium">M</span></td>
+                                        <td><span class="severity-count">${it.scanDetails.getVulnerabilitiesLowCount()}</span><span class="severity-icon low">L</span></td>
                                     </tr>
                                     <tr>
                                         <td>
