@@ -1,6 +1,3 @@
-
-
-
 package io.jenkins.plugins.wiz;
 
 import java.io.File;
@@ -26,8 +23,7 @@ public class WizScannerResult {
     private static final Logger LOGGER = Logger.getLogger(WizScannerResult.class.getName());
     private static final DateTimeFormatter OUTPUT_FORMATTER =
             DateTimeFormatter.ofPattern("MMMM d, yyyy 'at' h:mm a", Locale.ENGLISH);
-    private static final DateTimeFormatter INPUT_FORMATTER =
-            DateTimeFormatter.ISO_DATE_TIME;
+    private static final DateTimeFormatter INPUT_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
 
     private String scannedResource;
     private String scanTime;
@@ -249,9 +245,7 @@ public class WizScannerResult {
 
         // Add validation method
         public boolean isValid() {
-            return totalMatches >= 0 &&
-                    filesParsed <= filesFound &&
-                    queriesExecuted <= queriesLoaded;
+            return totalMatches >= 0 && filesParsed <= filesFound && queriesExecuted <= queriesLoaded;
         }
     }
 
@@ -358,10 +352,12 @@ public class WizScannerResult {
     }
 
     private static void validateResult(WizScannerResult details) {
-        if (details.getVulnerabilities().isPresent() && !details.getVulnerabilities().get().isValid()) {
+        if (details.getVulnerabilities().isPresent()
+                && !details.getVulnerabilities().get().isValid()) {
             LOGGER.warning("Vulnerabilities data contains inconsistencies");
         }
-        if (details.getScanStatistics().isPresent() && !details.getScanStatistics().get().isValid()) {
+        if (details.getScanStatistics().isPresent()
+                && !details.getScanStatistics().get().isValid()) {
             LOGGER.warning("Scan statistics contain inconsistencies");
         }
     }
@@ -489,7 +485,8 @@ public class WizScannerResult {
 
     @Override
     public String toString() {
-        return String.format("WizScannerResult{resource='%s', status=%s, vulnerabilities=%d, secrets=%d}",
+        return String.format(
+                "WizScannerResult{resource='%s', status=%s, vulnerabilities=%d, secrets=%d}",
                 getScannedResource(),
                 getStatus(),
                 getVulnerabilities().map(Vulnerabilities::getTotalCount).orElse(0),

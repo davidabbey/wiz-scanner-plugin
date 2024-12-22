@@ -92,14 +92,12 @@ public class WizScannerAction implements RunAction2 {
 
     @Override
     public String getDisplayName() {
-        return artifactSuffix == null ? DEFAULT_DISPLAY_NAME
-                : DEFAULT_DISPLAY_NAME + " " + artifactSuffix;
+        return artifactSuffix == null ? DEFAULT_DISPLAY_NAME : DEFAULT_DISPLAY_NAME + " " + artifactSuffix;
     }
 
     @Override
     public String getUrlName() {
-        return artifactSuffix == null ? BASE_URL_NAME
-                : BASE_URL_NAME + "-" + artifactSuffix;
+        return artifactSuffix == null ? BASE_URL_NAME : BASE_URL_NAME + "-" + artifactSuffix;
     }
 
     // Getters

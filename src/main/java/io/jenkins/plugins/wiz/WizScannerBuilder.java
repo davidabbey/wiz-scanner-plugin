@@ -63,7 +63,8 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
      * @param wizCliURL The Wiz CLI URL
      * @throws AbortException if any required parameter is missing
      */
-    private void validateConfiguration(String wizClientId, Secret wizSecretKey, String wizCliURL) throws AbortException {
+    private void validateConfiguration(String wizClientId, Secret wizSecretKey, String wizCliURL)
+            throws AbortException {
         if (StringUtils.isBlank(wizClientId)) {
             throw new AbortException("Wiz Client ID is required");
         }
@@ -99,8 +100,13 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
     }
 
     @Override
-    public void perform(@NotNull Run<?, ?> build, @NotNull FilePath workspace, @NotNull EnvVars env,
-                        @NotNull Launcher launcher, @NotNull TaskListener listener) throws InterruptedException, IOException {
+    public void perform(
+            @NotNull Run<?, ?> build,
+            @NotNull FilePath workspace,
+            @NotNull EnvVars env,
+            @NotNull Launcher launcher,
+            @NotNull TaskListener listener)
+            throws InterruptedException, IOException {
         try {
             LOGGER.log(Level.FINE, "Starting Wiz Scanner build step for build {0}", build.getDisplayName());
 
@@ -109,11 +115,7 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
             EnvVars envVars = build.getEnvironment(listener);
 
             // Validate configuration
-            validateConfiguration(
-                    descriptor.getWizClientId(),
-                    descriptor.getWizSecretKey(),
-                    descriptor.getWizCliURL()
-            );
+            validateConfiguration(descriptor.getWizClientId(), descriptor.getWizSecretKey(), descriptor.getWizCliURL());
 
             // Set environment variables
             setupEnvironment(envVars, descriptor.getWizEnv());
@@ -147,7 +149,8 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
             Launcher launcher,
             TaskListener listener,
             DescriptorImpl descriptor,
-            ArtifactInfo artifactInfo) throws IOException, InterruptedException {
+            ArtifactInfo artifactInfo)
+            throws IOException, InterruptedException {
 
         LOGGER.log(Level.FINE, "Executing Wiz scan with artifact name: {0}", artifactInfo.name);
 
@@ -165,11 +168,8 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
     }
 
     private void processResults(
-            Run<?, ?> build,
-            int exitCode,
-            FilePath workspace,
-            TaskListener listener,
-            ArtifactInfo artifactInfo) throws IOException, InterruptedException {
+            Run<?, ?> build, int exitCode, FilePath workspace, TaskListener listener, ArtifactInfo artifactInfo)
+            throws IOException, InterruptedException {
 
         build.addAction(new WizScannerAction(build, workspace, artifactInfo.suffix, artifactInfo.name));
 
@@ -191,10 +191,10 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
             throws InterruptedException {
 
         FilePath[] filesToClean = {
-                new FilePath(new File(build.getRootDir(), "wizcli_output")),
-                new FilePath(new File(build.getRootDir(), "wizcli_err_output")),
-                new FilePath(workspace, artifactName),
-                new FilePath(workspace, "wizcli")
+            new FilePath(new File(build.getRootDir(), "wizcli_output")),
+            new FilePath(new File(build.getRootDir(), "wizcli_err_output")),
+            new FilePath(workspace, artifactName),
+            new FilePath(workspace, "wizcli")
         };
 
         listener.getLogger().println("Cleaning up temporary files...");
