@@ -21,7 +21,6 @@ public class WizScannerAction implements RunAction2 {
     private transient Run run;
     private final WizScannerResult scanDetails;
     private final String name;
-    private final String resultsUrl;
     private final Run<?, ?> build;
     private final String artifactSuffix;
 
@@ -34,14 +33,11 @@ public class WizScannerAction implements RunAction2 {
      * @throws IllegalArgumentException if required parameters are null
      */
     public WizScannerAction(Run<?, ?> build, FilePath workspace, String artifactSuffix, String artifactName) {
-        if (build == null) throw new IllegalArgumentException("Build cannot be null");
-        if (workspace == null) throw new IllegalArgumentException("Workspace cannot be null");
-        if (artifactName == null) throw new IllegalArgumentException("Artifact name cannot be null");
+        WizInputValidator.validateScanAction(build, workspace, artifactName);
 
         this.name = artifactSuffix;
         this.build = build;
         this.artifactSuffix = artifactSuffix;
-        this.resultsUrl = "../artifact/" + artifactName;
 
         WizScannerResult loadedDetails = null;
         try {
@@ -111,10 +107,6 @@ public class WizScannerAction implements RunAction2 {
 
     public Run<?, ?> getBuild() {
         return build;
-    }
-
-    public String getResultsUrl() {
-        return resultsUrl;
     }
 
     public WizScannerResult getScanDetails() {

@@ -4,9 +4,6 @@ import hudson.AbortException;
 import hudson.FilePath;
 import hudson.model.Run;
 import hudson.util.Secret;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,22 +27,30 @@ public class WizInputValidator {
         ALLOWED_SUBCOMMANDS.put("iac", new HashSet<>(List.of("scan")));
     }
 
-    private static final Set<String> ALLOWED_GLOBAL_FLAGS = new HashSet<>(Arrays.asList(
-            "--log", "--no-color", "-C", "--no-style", "-S", "--no-telemetry", "-T", "-h", "--help", "-f", "--format"));
+    /**
+     * Validates the global configuration parameters
+     */
+    public static void validateConfiguration(String wizClientId, Secret wizSecretKey, String wizCliURL)
+            throws AbortException {
+        if (StringUtils.isBlank(wizClientId)) {
+            throw new AbortException("Wiz Client ID is required");
+        }
+        if (wizSecretKey == null || StringUtils.isBlank(Secret.toString(wizSecretKey))) {
+            throw new AbortException("Wiz Secret Key is required");
+        }
+        if (StringUtils.isBlank(wizCliURL)) {
+            throw new AbortException("Wiz CLI URL is required");
+        }
+    }
 
     /**
-     * Validates all required inputs.
+     * Validates scan action parameters
      */
-    public static void validateInputs(
-            Run<?, ?> build, FilePath workspace, String wizCliURL, String wizClientId, Secret wizSecretKey)
-            throws AbortException {
-        if (build == null) throw new AbortException("Build cannot be null");
-        if (workspace == null) throw new AbortException("Workspace cannot be null");
-        if (StringUtils.isBlank(wizCliURL)) throw new AbortException("Wiz CLI URL cannot be empty");
-        if (StringUtils.isBlank(wizClientId)) throw new AbortException("Client ID cannot be empty");
-        if (wizSecretKey == null || StringUtils.isBlank(Secret.toString(wizSecretKey))) {
-            throw new AbortException("Secret key cannot be empty");
-        }
+    public static void validateScanAction(Run<?, ?> build, FilePath workspace, String artifactName)
+            throws IllegalArgumentException {
+        if (build == null) throw new IllegalArgumentException("Build cannot be null");
+        if (workspace == null) throw new IllegalArgumentException("Workspace cannot be null");
+        if (artifactName == null) throw new IllegalArgumentException("Artifact name cannot be null");
     }
 
     /**
@@ -121,49 +126,6 @@ public class WizInputValidator {
                 || arg.contains("<")
                 || arg.contains("`")) {
             throw new IllegalArgumentException("Invalid characters in argument: " + arg);
-        }
-
-        // Handle flags
-        if (arg.startsWith("-")) {
-            if (!ALLOWED_GLOBAL_FLAGS.contains(arg)) {
-                // For flags with values, check the format
-                if (arg.contains("=")) {
-                    validateFlagWithValue(arg);
-                } else {
-                    // Allow other flags but log them
-                    // You might want to be more restrictive here
-                }
-            }
-            return;
-        }
-
-        // For file paths, do additional validation
-        if (arg.contains("/") || arg.contains("\\")) {
-            validateFilePath(arg);
-        }
-    }
-
-    private static void validateFlagWithValue(String flag) {
-        String[] parts = flag.split("=", 2);
-        if (parts.length != 2) {
-            throw new IllegalArgumentException("Invalid flag format: " + flag);
-        }
-
-        if (parts[0].equals("--log")) {
-            validateFilePath(parts[1]);
-        }
-    }
-
-    private static void validateFilePath(String path) {
-        if (path.contains("..")) {
-            throw new IllegalArgumentException("Directory traversal not allowed");
-        }
-
-        try {
-            Path normalizedPath = Paths.get(path).normalize();
-            // Additional path validation could be added here
-        } catch (InvalidPathException e) {
-            throw new IllegalArgumentException("Invalid file path: " + path);
         }
     }
 }

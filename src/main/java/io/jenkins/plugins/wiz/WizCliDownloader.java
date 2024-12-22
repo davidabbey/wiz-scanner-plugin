@@ -1,8 +1,10 @@
 package io.jenkins.plugins.wiz;
 
+import hudson.AbortException;
 import hudson.FilePath;
-import hudson.Launcher;
 import hudson.model.TaskListener;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -22,36 +24,43 @@ public class WizCliDownloader {
     private static final Logger LOGGER = Logger.getLogger(WizCliDownloader.class.getName());
     private static final int DOWNLOAD_TIMEOUT = 60000; // 60 seconds
     private static final int CONNECT_TIMEOUT = 10000; // 10 seconds
-    private static final String WIZ_DOWNLOADS_BASE = "https://downloads.wiz.io/wizcli/";
     private static final String PUBLIC_KEY_RESOURCE = "/io/jenkins/plugins/wiz/public_key.asc";
 
 
     /**
      * Sets up the Wiz CLI by downloading and verifying the binary.
      */
-    public static WizCliSetup setupWizCli(
-            FilePath workspace, String osName, String wizCliURL, Launcher launcher, TaskListener listener)
-            throws IOException, InterruptedException {
+    public static WizCliSetup setupWizCli(FilePath workspace, String osName, String wizCliURL,
+                                         TaskListener listener) throws IOException {
 
-        // Detect OS and architecture
-        boolean isWindows = osName.contains("win");
-        boolean isMac = osName.contains("mac") || osName.contains("darwin");
-        String arch = System.getProperty("os.arch").toLowerCase();
-        String cliFileName = isWindows ? WizCliSetup.WIZCLI_WINDOWS_PATH : WizCliSetup.WIZCLI_UNIX_PATH;
-        String cliPath = workspace.child(cliFileName).getRemote();
+        try {
+            // Validate CLI URL format before proceeding
+            WizInputValidator.validateWizCliUrl(wizCliURL);
 
-        downloadAndVerifyWizCli(wizCliURL, cliPath, workspace, launcher, listener);
+            // Detect OS and architecture
+            boolean isWindows = osName.contains("win");
+            boolean isMac = osName.contains("mac") || osName.contains("darwin");
+            String arch = System.getProperty("os.arch").toLowerCase();
+            String cliFileName = isWindows ? WizCliSetup.WIZCLI_WINDOWS_PATH : WizCliSetup.WIZCLI_UNIX_PATH;
+            String cliPath = workspace.child(cliFileName).getRemote();
 
-        if (!isWindows) {
-            makeExecutable(launcher, workspace, cliPath);
+            downloadAndVerifyWizCli(wizCliURL, cliPath, workspace, listener);
+
+            if (!isWindows) {
+                makeExecutable(cliPath);
+            }
+
+            return new WizCliSetup(cliPath, isWindows, isMac, osName, arch);
+
+        } catch (AbortException e) {
+            listener.error("Invalid Wiz CLI URL format: " + e.getMessage());
+            throw e;
         }
-
-        return new WizCliSetup(cliPath, isWindows, isMac, osName, arch);
     }
 
     private static void downloadAndVerifyWizCli(
-            String wizCliURL, String cliPath, FilePath workspace, Launcher launcher, TaskListener listener)
-            throws IOException, InterruptedException {
+            String wizCliURL, String cliPath, FilePath workspace, TaskListener listener)
+            throws IOException {
         try {
             // Download CLI
             listener.getLogger().println("Downloading Wiz CLI from: " + wizCliURL);
@@ -89,7 +98,7 @@ public class WizCliDownloader {
         }
     }
 
-    private static void extractPublicKey(FilePath publicKeyFile) throws IOException, InterruptedException {
+    private static void extractPublicKey(FilePath publicKeyFile) throws IOException {
         try (InputStream keyStream = WizCliDownloader.class.getResourceAsStream(PUBLIC_KEY_RESOURCE)) {
             if (keyStream == null) {
                 throw new IOException("Could not find public key resource");
@@ -101,7 +110,7 @@ public class WizCliDownloader {
             // Write to workspace
             publicKeyFile.write(publicKey, StandardCharsets.UTF_8.name());
 
-            LOGGER.fine("Public key extracted successfully");
+            LOGGER.log(Level.FINE,"Public key extracted successfully");
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to extract public key", e);
             throw new IOException("Failed to extract public key from resources", e);
@@ -179,16 +188,21 @@ public class WizCliDownloader {
         }
     }
 
-    private static void makeExecutable(Launcher launcher, FilePath workspace, String cliPath)
-            throws IOException, InterruptedException {
-        int result = launcher.launch()
-                .cmds("chmod", "+x", cliPath)
-                .pwd(workspace)
-                .quiet(true)
-                .join();
+    /**
+     * Makes the CLI file executable using Java file permissions.
+     *
+     * @param cliPath Path to the CLI executable
+     * @throws IOException if setting the executable permission fails
+     */
+    private static void makeExecutable(String cliPath) throws IOException {
+        File cliFile = new File(cliPath);
 
-        if (result != 0) {
-            throw new IOException("Failed to make CLI executable. Exit code: " + result);
+        if (!cliFile.exists()) {
+            throw new IOException("CLI file not found at: " + cliPath);
+        }
+
+        if (!cliFile.setExecutable(true, true)) {  // true, true means executable by owner only
+            throw new IOException("Failed to make CLI executable: " + cliPath);
         }
     }
 

@@ -3,20 +3,18 @@ package io.jenkins.plugins.wiz;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.Launcher.ProcStarter;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.Secret;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class WizScannerExecuter {
-    private static final Logger LOGGER = Logger.getLogger(WizScannerExecuter.class.getName());
+public class WizScannerExecutor {
+    private static final Logger LOGGER = Logger.getLogger(WizScannerExecutor.class.getName());
 
     public static int execute(
             Run<?, ?> build,
@@ -32,27 +30,14 @@ public class WizScannerExecuter {
 
         try {
             // Download and setup CLI
-            WizCliSetup cliSetup = WizCliDownloader.setupWizCli(workspace, System.getProperty("os.name").toLowerCase(), wizCliURL, launcher, listener);
+            WizCliSetup cliSetup = WizCliDownloader.setupWizCli(workspace, System.getProperty("os.name").toLowerCase(), wizCliURL, listener);
 
             // Authenticate
-            listener.getLogger().println("Authenticating with Wiz API...");
-            ArgumentListBuilder authArgs = new ArgumentListBuilder();
-            authArgs.add(cliSetup.getCliCommand(), "auth", "--id");
-            authArgs.addMasked(wizClientId);
-            authArgs.add("--secret");
-            authArgs.addMasked(Secret.toString(wizSecretKey));
-
-            int authExitCode = launcher.launch()
-                    .cmds(authArgs)
-                    .pwd(workspace)
-                    .envs(env)
-                    .stdout(listener.getLogger())
-                    .stderr(listener.getLogger())
-                    .join();
-
-            if (authExitCode != 0) {
-                listener.error("Authentication failed with exit code: " + authExitCode);
-                return authExitCode;
+            int authResult = WizCliAuthenticator.authenticate(
+                    launcher, workspace, env, wizClientId, wizSecretKey, listener, cliSetup);
+            if (authResult != 0) {
+                listener.error("Authentication failed with exit code: " + authResult);
+                return authResult;
             }
 
             // Execute scan
@@ -71,7 +56,7 @@ public class WizScannerExecuter {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             ByteArrayOutputStream errorStream = new ByteArrayOutputStream();
 
-            listener.getLogger().println("Executing command: " + scanArgs.toString());
+            listener.getLogger().println("Executing command: " + scanArgs);
 
             // Execute the scan command
             int exitCode = launcher.launch()

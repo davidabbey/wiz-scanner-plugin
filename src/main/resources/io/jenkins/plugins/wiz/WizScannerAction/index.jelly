@@ -5,7 +5,7 @@
             <st:include page="sidepanel.jelly" it="${it.build}" optional="true" />
         </l:side-panel>
         <l:main-panel>
-            <j:jelly xmlns:j="jelly:core" xmlns:l="jelly:fmt" xmlns:t="jelly:html">
+            <j:jelly xmlns:j="jelly:core" xmlns:l="jelly:fmt">
                 <html>
                     <head>
                         <title>Wiz CLI Scan Results</title>
@@ -30,6 +30,7 @@
                             .high { background-color: hsl( 34deg 100% 91.7% ); color: hsl( 16deg 45% 41.5% ); border: 1px solid hsl( 21deg 100% 74.5% );}
                             .medium { background-color: hsl( 53deg 100% 88.9% ); color: hsl( 42deg 50% 31% ); border: 1px solid hsl( 48deg 59.6% 64.3% ); }
                             .low { background-color: hsl( 239deg 13.4% 95.4% ); color: hsl( 220deg 6% 40% ); border: 1px solid hsl( 234deg 10.4% 84.4% ); }
+                            .infos { background-color: hsl( 239deg 13.4% 95.4% ); color: hsl( 220deg 6% 40% ); border: 1px solid hsl( 234deg 10.4% 84.4% ); }
                             .scan-results a { color: blue; text-decoration: none; }
                             .scan-results a:hover { text-decoration: underline; }
                             .icon-container {
@@ -56,7 +57,7 @@
                                 <strong>Scanned resource</strong>${it.scanDetails.getScannedResource()}
                             </div>
                             <div class="section">
-                                <strong>Scan exit code</strong>
+                                <strong>Scan Verdict</strong>
                                 <span class="
                                         ${it.scanDetails.getStatus().matches('Passed') ? 'status passed' : ''}
                                         ${it.scanDetails.getStatus().matches('Warned') ? 'status warned' : ''}
@@ -75,7 +76,7 @@
                                     <tr>
                                         <td>
                                             <div class="icon-container">
-                                            <svg fill="#000000" height="20px" width="20px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+                                            <svg fill="#000000" height="20px" width="20px" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg"
                                                  viewBox="0 0 477.057 477.057" xml:space="preserve"><g><path d="M167.151,285.641c-47.054-3.222-84.37-42.427-84.37-90.28c0-49.959,40.64-90.599,90.598-90.599
 		c40.105,0,74.161,26.222,86.05,62.397c0.706-0.03,1.382-0.202,2.096-0.202c5.435,0,10.723,0.994,15.646,2.905
 		c4.527-10.204,12.936-18.248,23.293-22.48c-2.026-5.365-4.294-10.606-6.957-15.623l20.693-20.693
@@ -111,6 +112,7 @@
                                         <td><span class="severity-count">${it.scanDetails.getScanStatisticsHighMatches()}</span><span class="severity-icon high">H</span></td>
                                         <td><span class="severity-count">${it.scanDetails.getScanStatisticsMediumMatches()}</span><span class="severity-icon medium">M</span></td>
                                         <td><span class="severity-count">${it.scanDetails.getScanStatisticsLowMatches()}</span><span class="severity-icon low">L</span></td>
+                                        <td><span class="severity-count">${it.scanDetails.getScanStatisticsInfoMatches()}</span><span class="severity-icon infos">I</span></td>
                                     </tr>
                                     <tr>
                                         <td>
@@ -124,6 +126,8 @@
                                         <td><span class="severity-count">${it.scanDetails.getVulnerabilitiesHighCount()}</span><span class="severity-icon high">H</span></td>
                                         <td><span class="severity-count">${it.scanDetails.getVulnerabilitiesMediumCount()}</span><span class="severity-icon medium">M</span></td>
                                         <td><span class="severity-count">${it.scanDetails.getVulnerabilitiesLowCount()}</span><span class="severity-icon low">L</span></td>
+                                        <td><span class="severity-count">${it.scanDetails.getVulnerabilitiesInfoCount()}</span><span class="severity-icon infos">I</span></td>
+
                                     </tr>
                                     <tr>
                                         <td>
@@ -134,7 +138,11 @@
                                             </div>
                                             Secrets
                                         </td>
-                                        <td>${it.scanDetails.getSecretTotalCount()}</td>
+                                        <td><span class="severity-count">${it.scanDetails.getSecretsCriticalCount()}</span><span class="severity-icon critical">C</span></td>
+                                        <td><span class="severity-count">${it.scanDetails.getSecretsHighCount()}</span><span class="severity-icon high">H</span></td>
+                                        <td><span class="severity-count">${it.scanDetails.getSecretsMediumCount()}</span><span class="severity-icon medium">M</span></td>
+                                        <td><span class="severity-count">${it.scanDetails.getSecretsLowCount()}</span><span class="severity-icon low">L</span></td>
+                                        <td><span class="severity-count">${it.scanDetails.getSecretsInfoCount()}</span><span class="severity-icon infos">I</span></td>
                                     </tr>
                                 </tbody>
                             </table>

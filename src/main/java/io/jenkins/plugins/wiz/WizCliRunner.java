@@ -51,7 +51,7 @@ public class WizCliRunner {
         File errorFile = new File(build.getRootDir(), "wizcli_err_output");
 
         ArgumentListBuilder scanArgs = buildScanArguments(userInput, cliSetup);
-        listener.getLogger().println("Executing command: " + scanArgs.toString());
+        listener.getLogger().println("Executing command: " + scanArgs);
 
         int exitCode = executeScanProcess(launcher, workspace, env, scanArgs, outputFile, errorFile);
 
@@ -83,6 +83,7 @@ public class WizCliRunner {
         }
 
         // Ensure JSON output format if not specified
+        assert userInput != null;
         if (!userInput.contains("-f") && !userInput.contains("--format")) {
             args.add("-f", "json");
         }
