@@ -43,6 +43,7 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
         this.userInput = StringUtils.trimToEmpty(userInput);
     }
 
+    @SuppressWarnings("unused")
     public String getUserInput() {
         return userInput;
     }
@@ -107,7 +108,17 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
             ArtifactInfo artifactInfo = determineArtifactName(build.hashCode());
 
             // Execute scan
-            int exitCode = executeScan(build, workspace, envVars, launcher, listener, descriptor, artifactInfo);
+            int exitCode = WizCliRunner.execute(
+                    build,
+                    workspace,
+                    envVars,
+                    launcher,
+                    listener,
+                    descriptor.getWizCliURL(),
+                    descriptor.getWizClientId(),
+                    descriptor.getWizSecretKey(),
+                    userInput,
+                    artifactInfo.name);
 
             // Process results
             processResults(build, exitCode, workspace, listener, artifactInfo);
@@ -123,31 +134,6 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
             envVars.put(WIZ_ENV_KEY, wizEnv);
             LOGGER.log(Level.FINE, "Set WIZ_ENV to {0}", wizEnv);
         }
-    }
-
-    private int executeScan(
-            Run<?, ?> build,
-            FilePath workspace,
-            EnvVars envVars,
-            Launcher launcher,
-            TaskListener listener,
-            DescriptorImpl descriptor,
-            ArtifactInfo artifactInfo)
-            throws IOException, InterruptedException {
-
-        LOGGER.log(Level.FINE, "Executing Wiz scan with artifact name: {0}", artifactInfo.name);
-
-        return WizScannerExecutor.execute(
-                build,
-                workspace,
-                envVars,
-                launcher,
-                listener,
-                descriptor.getWizCliURL(),
-                descriptor.getWizClientId(),
-                descriptor.getWizSecretKey(),
-                userInput,
-                artifactInfo.name);
     }
 
     private void processResults(
