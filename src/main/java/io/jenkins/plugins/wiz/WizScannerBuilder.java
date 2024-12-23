@@ -13,6 +13,7 @@ import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -125,7 +126,7 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
 
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error during Wiz scan execution", e);
-            throw new AbortException("Wiz scan failed: " + e.getMessage());
+            throw new RuntimeException("Wiz scan failed: " + e.getMessage(), e);
         }
     }
 
@@ -140,7 +141,12 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
             Run<?, ?> build, int exitCode, FilePath workspace, TaskListener listener, ArtifactInfo artifactInfo)
             throws IOException {
 
-        build.addAction(new WizScannerAction(build, workspace, artifactInfo.suffix, artifactInfo.name));
+        if (exitCode == OK_CODE) {
+            File resultFile = new File(workspace.getRemote(), artifactInfo.name);
+            if (resultFile.exists() && resultFile.length() > 0) {
+                build.addAction(new WizScannerAction(build, workspace, artifactInfo.suffix, artifactInfo.name));
+            }
+        }
 
         try {
             WizCliUtils.cleanupArtifacts(build, workspace, listener, artifactInfo.name);

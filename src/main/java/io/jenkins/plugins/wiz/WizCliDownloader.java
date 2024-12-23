@@ -156,7 +156,6 @@ public class WizCliDownloader {
 
             listener.getLogger().println("Successfully verified Wiz CLI signature and checksum");
         } catch (Exception e) {
-            // Wrap the generic Exception in an IOException with the original message
             throw new IOException("GPG signature verification failed: " + e.getMessage(), e);
         }
     }

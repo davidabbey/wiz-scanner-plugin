@@ -19,15 +19,11 @@ import java.util.logging.Logger;
 /**
  * Provides PGP signature verification functionality using the BouncyCastle library.
  * This class handles verification of PGP signatures against provided public keys and signed data.
- *
  * Thread safety: This class is thread-safe as it maintains no state between operations.
  */
 public class PGPVerifier {
     private static final Logger LOGGER = Logger.getLogger(PGPVerifier.class.getName());
 
-    /**
-     * Initialize BouncyCastle security provider
-     */
     static {
         if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
             Security.addProvider(new BouncyCastleProvider());
@@ -124,8 +120,7 @@ public class PGPVerifier {
 
                                 // Check if key is designated for signing
                                 if (!key.isMasterKey() && (keyFlags & PGPKeyFlags.CAN_SIGN) != 0) {
-                                    LOGGER.log(Level.INFO, "Found suitable signing key: {0}",
-                                            Long.toHexString(key.getKeyID()));
+                                    LOGGER.log(Level.INFO, "Found suitable signing key");
                                     return key;
                                 }
                             }

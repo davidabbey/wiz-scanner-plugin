@@ -384,7 +384,12 @@ public class WizScannerResult {
         }
     }
 
-    private static WizScannerResult parseJsonContent(JSONObject root) {
+    /**
+     * Parses a WizScannerResult from a JSON object
+     * @param root The JSON object to parse
+     * @return The parsed WizScannerResult or null if parsing fails
+     */
+    public static WizScannerResult parseJsonContent(JSONObject root) {
         WizScannerResult details = new WizScannerResult();
 
         try {
@@ -412,6 +417,10 @@ public class WizScannerResult {
         if (details.getScanStatistics().isPresent()
                 && !details.getScanStatistics().get().isValid()) {
             LOGGER.log(Level.WARNING,"Scan statistics contain inconsistencies");
+        }
+        if (details.getSecrets().isPresent()
+                && !details.getSecrets().get().isValid()) {
+            LOGGER.log(Level.WARNING,"Secrets data contain inconsistencies");
         }
     }
 

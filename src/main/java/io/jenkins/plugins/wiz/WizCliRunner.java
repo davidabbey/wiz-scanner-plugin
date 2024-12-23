@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -41,9 +42,10 @@ public class WizCliRunner {
             String userInput,
             String artifactName) throws IOException, InterruptedException {
 
+        WizCliSetup cliSetup = null;
         try {
             // Download and setup CLI
-            WizCliSetup cliSetup = WizCliDownloader.setupWizCli(
+             cliSetup = WizCliDownloader.setupWizCli(
                     workspace,
                     System.getProperty("os.name").toLowerCase(),
                     wizCliURL,
@@ -51,7 +53,7 @@ public class WizCliRunner {
             );
 
             // Authenticate
-            int authResult = WizCliAuthenticator.authenticate(
+            WizCliAuthenticator.authenticate(
                     launcher,
                     workspace,
                     env,
@@ -61,18 +63,32 @@ public class WizCliRunner {
                     cliSetup
             );
 
-            if (authResult != 0) {
-                listener.error("Authentication failed with exit code: " + authResult);
-                return authResult;
-            }
-
             // Execute scan
             return executeScan(build, workspace, env, launcher, listener, userInput, artifactName, cliSetup);
 
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error during Wiz scan execution", e);
-            listener.error("Error during Wiz scan execution: " + e.getMessage());
-            throw new IOException("Wiz scan failed", e);
+            throw new IOException(e);
+        } finally {
+            if (cliSetup != null) {
+                try {
+                    int logoutResult = WizCliAuthenticator.logout(
+                            launcher,
+                            workspace,
+                            env,
+                            listener,
+                            cliSetup
+                    );
+
+                    if (logoutResult != 0) {
+                        LOGGER.warning("Failed to logout from Wiz CLI. Exit code: " + logoutResult);
+                    }
+                } catch (Exception e) {
+                    // Log but don't fail the build if logout fails
+                    LOGGER.log(Level.WARNING, "Error during Wiz CLI logout", e);
+                    listener.error("Warning: Failed to logout from Wiz CLI: " + e.getMessage());
+                }
+            }
+
         }
     }
 
@@ -108,7 +124,13 @@ public class WizCliRunner {
 
         int exitCode = executeScanProcess(launcher, workspace, env, scanArgs, outputFile, errorFile);
 
-        if (exitCode == 0) {
+        if (exitCode != 0) {
+            // Print error file content to console if scan failed
+            if (errorFile.exists() && errorFile.length() > 0) {
+                listener.error("Scan failed with error output:");
+                listener.getLogger().println(Files.readString(errorFile.toPath()));
+            }
+        } else {
             copyOutputToArtifact(outputFile, workspace, artifactName);
         }
 
