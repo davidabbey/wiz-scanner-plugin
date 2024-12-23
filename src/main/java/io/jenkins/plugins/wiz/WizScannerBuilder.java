@@ -12,12 +12,14 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
+import hudson.security.Permission;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.tasks.SimpleBuildStep;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
@@ -175,6 +177,8 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
         private String wizEnv;
 
         public FormValidation doCheckUserInput(@QueryParameter String value) {
+            Jenkins.get().checkPermission(Permission.CONFIGURE);
+
             if (StringUtils.isBlank(value)) {
                 return FormValidation.error(Messages.WizScannerBuilder_DescriptorImpl_errors_missingName());
             }
