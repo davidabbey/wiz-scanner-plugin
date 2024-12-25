@@ -135,12 +135,6 @@ public class WizScannerResult {
         private int mediumMatches;
         private int highMatches;
         private int criticalMatches;
-        private int totalMatches;
-        private int filesFound;
-        private int filesParsed;
-        private int queriesLoaded;
-        private int queriesExecuted;
-        private int queriesExecutionFailed;
 
         // Enhanced getters with validation
         public int getInfoMatches() {
@@ -163,30 +157,6 @@ public class WizScannerResult {
             return Math.max(0, criticalMatches);
         }
 
-        public int getTotalMatches() {
-            return Math.max(0, totalMatches);
-        }
-
-        public int getFilesFound() {
-            return Math.max(0, filesFound);
-        }
-
-        public int getFilesParsed() {
-            return Math.max(0, filesParsed);
-        }
-
-        public int getQueriesLoaded() {
-            return Math.max(0, queriesLoaded);
-        }
-
-        public int getQueriesExecuted() {
-            return Math.max(0, queriesExecuted);
-        }
-
-        public int getQueriesExecutionFailed() {
-            return Math.max(0, queriesExecutionFailed);
-        }
-
         // Setters with validation
         public void setInfoMatches(int matches) {
             this.infoMatches = Math.max(0, matches);
@@ -206,35 +176,6 @@ public class WizScannerResult {
 
         public void setCriticalMatches(int matches) {
             this.criticalMatches = Math.max(0, matches);
-        }
-
-        public void setTotalMatches(int matches) {
-            this.totalMatches = Math.max(0, matches);
-        }
-
-        public void setFilesFound(int count) {
-            this.filesFound = Math.max(0, count);
-        }
-
-        public void setFilesParsed(int count) {
-            this.filesParsed = Math.max(0, count);
-        }
-
-        public void setQueriesLoaded(int count) {
-            this.queriesLoaded = Math.max(0, count);
-        }
-
-        public void setQueriesExecuted(int count) {
-            this.queriesExecuted = Math.max(0, count);
-        }
-
-        public void setQueriesExecutionFailed(int count) {
-            this.queriesExecutionFailed = Math.max(0, count);
-        }
-
-        // Add validation method
-        public boolean isValid() {
-            return totalMatches >= 0 && filesParsed <= filesFound && queriesExecuted <= queriesLoaded;
         }
     }
 
@@ -414,10 +355,6 @@ public class WizScannerResult {
                 && !details.getVulnerabilities().get().isValid()) {
             LOGGER.log(Level.WARNING,"Vulnerabilities data contains inconsistencies");
         }
-        if (details.getScanStatistics().isPresent()
-                && !details.getScanStatistics().get().isValid()) {
-            LOGGER.log(Level.WARNING,"Scan statistics contain inconsistencies");
-        }
         if (details.getSecrets().isPresent()
                 && !details.getSecrets().get().isValid()) {
             LOGGER.log(Level.WARNING,"Secrets data contain inconsistencies");
@@ -505,12 +442,6 @@ public class WizScannerResult {
                     stats.setMediumMatches(scanStats.optInt("mediumMatches", 0));
                     stats.setHighMatches(scanStats.optInt("highMatches", 0));
                     stats.setCriticalMatches(scanStats.optInt("criticalMatches", 0));
-                    stats.setTotalMatches(scanStats.optInt("totalMatches", 0));
-                    stats.setFilesFound(scanStats.optInt("filesFound", 0));
-                    stats.setFilesParsed(scanStats.optInt("filesParsed", 0));
-                    stats.setQueriesLoaded(scanStats.optInt("queriesLoaded", 0));
-                    stats.setQueriesExecuted(scanStats.optInt("queriesExecuted", 0));
-                    stats.setQueriesExecutionFailed(scanStats.optInt("queriesExecutionFailed", 0));
                 }
             }
         } catch (Exception e) {
@@ -553,7 +484,7 @@ public class WizScannerResult {
                 getSecrets().map(Secrets::getTotalCount).orElse(0));
     }
 
-    /**
+    /*
      * The following getter methods are used by the index.jelly template to display
      * vulnerability and scan statistics in the Jenkins UI. Although they may appear unused
      * in static code analysis, they are dynamically invoked by the Jelly template.

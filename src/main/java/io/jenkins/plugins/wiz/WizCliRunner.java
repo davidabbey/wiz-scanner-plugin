@@ -8,6 +8,8 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.Secret;
+import org.apache.commons.lang.SystemUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -47,7 +49,7 @@ public class WizCliRunner {
             // Download and setup CLI
              cliSetup = WizCliDownloader.setupWizCli(
                     workspace,
-                    System.getProperty("os.name").toLowerCase(),
+                    SystemUtils.OS_NAME.toLowerCase(),
                     wizCliURL,
                     listener
             );

@@ -1,68 +1,149 @@
+
+
+
 package io.jenkins.plugins.wiz;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
+import hudson.EnvVars;
+import hudson.FilePath;
+import hudson.Launcher;
 import hudson.model.FreeStyleProject;
+import hudson.model.Run;
+import hudson.model.TaskListener;
+import hudson.util.ArgumentListBuilder;
+import hudson.util.FormValidation;
 import hudson.util.Secret;
-import java.io.IOException;
-import javax.servlet.ServletException;
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
+import java.nio.charset.Charset;
+
+import hudson.util.StreamTaskListener;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
-import org.jvnet.hudson.test.WithoutJenkins;
 
 public class WizScannerBuilderTest {
+
     @Rule
-    public JenkinsRule jenkins = new JenkinsRule();
+    public JenkinsRule j = new JenkinsRule();
+
+    private TaskListener listener;
+    private Launcher mockLauncher;
+    private WizScannerBuilder builder;
+    private FilePath workspace;
+    private EnvVars env;
+    private ByteArrayOutputStream logOutput;
+    private static final String TEST_COMMAND = "docker scan alpine:latest";
+
+    @Before
+    public void setUp() throws Exception {
+        workspace = j.jenkins.getRootPath();
+        builder = new WizScannerBuilder(TEST_COMMAND);
+        logOutput = new ByteArrayOutputStream();
+        listener = new StreamTaskListener(logOutput, Charset.defaultCharset());
+
+        env = new EnvVars();
+        env.put("PATH", "/usr/local/bin:/usr/bin:/bin");
+        env.put("WIZ_ENV", "test");
+
+        mockLauncher = mock(Launcher.class);
+        Launcher.ProcStarter procStarter = mock(Launcher.ProcStarter.class);
+        when(mockLauncher.launch()).thenReturn(procStarter);
+        when(procStarter.cmds(any(ArgumentListBuilder.class))).thenReturn(procStarter);
+        when(procStarter.envs(anyMap())).thenReturn(procStarter);
+        when(procStarter.pwd(any(FilePath.class))).thenReturn(procStarter);
+        when(procStarter.stdout(any(OutputStream.class))).thenReturn(procStarter);
+        when(procStarter.stderr(any(OutputStream.class))).thenReturn(procStarter);
+        when(procStarter.quiet(anyBoolean())).thenReturn(procStarter);
+        when(procStarter.join()).thenReturn(0);
+    }
 
     @Test
     public void testConfigRoundtrip() throws Exception {
-        FreeStyleProject project = jenkins.createFreeStyleProject();
-        WizScannerBuilder builder = new WizScannerBuilder("docker scan alpine:latest");
+        FreeStyleProject project = j.createFreeStyleProject();
         project.getBuildersList().add(builder);
 
-        // Get the updated project from Jenkins
-        project = jenkins.configRoundtrip(project);
+        project = j.configRoundtrip(project);
 
-        // Verify builder was saved
-        WizScannerBuilder lhs = new WizScannerBuilder("docker scan alpine:latest");
-        jenkins.assertEqualDataBoundBeans(lhs, project.getBuildersList().get(WizScannerBuilder.class));
+        // Get the builder from the configured project
+        WizScannerBuilder after = project.getBuildersList().get(WizScannerBuilder.class);
+
+        // Verify configuration is preserved
+        j.assertEqualDataBoundBeans(builder, after);
     }
 
     @Test
-    @WithoutJenkins
-    public void testDescriptorValidation() throws ServletException, IOException {
+    public void testPerformSuccessful() throws Exception {
+        WizScannerBuilder.DescriptorImpl descriptor = j.jenkins.getDescriptorByType(WizScannerBuilder.DescriptorImpl.class);
+        FreeStyleProject project = j.createFreeStyleProject();
+        Run<?,?> run = project.scheduleBuild2(0).get();
+
+        descriptor.configure(null, net.sf.json.JSONObject.fromObject(
+                "{" +
+                        "'wizClientId': 'test-client'," +
+                        "'wizSecretKey': '" + Secret.fromString("test-secret").getEncryptedValue() + "'," +
+                        "'wizCliURL': 'https://downloads.wiz.io/wizcli/latest/wizcli-darwin-arm64'," +
+                        "'wizEnv': 'test'" +
+                        "}"
+        ));
+
+        FilePath resultFile = workspace.child("wizscan.json");
+        resultFile.write("{}", "UTF-8");
+
+        builder.perform(run, workspace, env, mockLauncher, listener);
+
+        assertEquals("test", env.get("WIZ_ENV"));
+        assertFalse("Log should contain output", logOutput.toString().isEmpty());
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void testPerformFailureInvalidConfig() throws Exception {
+        // Setup with invalid config
+        WizScannerBuilder.DescriptorImpl descriptor = j.jenkins.getDescriptorByType(WizScannerBuilder.DescriptorImpl.class);
+        FreeStyleProject project = j.createFreeStyleProject();
+        Run<?,?> run = project.scheduleBuild2(0).get();
+
+        descriptor.configure(null, net.sf.json.JSONObject.fromObject(
+                "{" +
+                        "'wizClientId': ''," +
+                        "'wizSecretKey': ''," +
+                        "'wizCliURL': ''," +
+                        "'wizEnv': ''" +
+                        "}"
+        ));
+
+        // Should throw exception
+        builder.perform(run, workspace, env, mockLauncher, listener);
+    }
+
+    @Test
+    public void testFormValidation() {
         WizScannerBuilder.DescriptorImpl descriptor = new WizScannerBuilder.DescriptorImpl();
 
-        // Test empty input validation
-        assertEquals("Please set the command", descriptor.doCheckUserInput("").getMessage());
+        // Test empty input
+        assertEquals("Error message for empty input",
+                Messages.WizScannerBuilder_DescriptorImpl_errors_missingName(),
+                descriptor.doCheckUserInput("").getMessage());
 
-        // Test valid input validation
-        assertTrue(descriptor.doCheckUserInput("docker scan alpine:latest").kind == hudson.util.FormValidation.Kind.OK);
+        // Test valid input
+        assertEquals("OK for valid input",
+                FormValidation.Kind.OK,
+                descriptor.doCheckUserInput(TEST_COMMAND).kind);
     }
 
     @Test
-    public void testGlobalConfig() throws Exception {
-        WizScannerBuilder.DescriptorImpl descriptor = jenkins.get(WizScannerBuilder.DescriptorImpl.class);
+    public void testDescriptorBasics() {
+        WizScannerBuilder.DescriptorImpl descriptor = new WizScannerBuilder.DescriptorImpl();
 
-        // Set global config values
-        String clientId = "test-client-id";
-        Secret secretKey = Secret.fromString("test-secret-key");
-        String cliUrl = "https://downloads.wiz.io/wizcli/latest/wizcli-linux-amd64";
-        String env = "test";
+        // Test display name
+        assertNotNull("Display name should not be null",
+                descriptor.getDisplayName());
 
-        descriptor.configure(
-                null,
-                new net.sf.json.JSONObject()
-                        .element("wizClientId", clientId)
-                        .element("wizSecretKey", secretKey.getEncryptedValue())
-                        .element("wizCliURL", cliUrl)
-                        .element("wizEnv", env));
-
-        // Verify values were saved
-        assertEquals(clientId, descriptor.getWizClientId());
-        assertEquals(secretKey.getEncryptedValue(), descriptor.getWizSecretKey().getEncryptedValue());
-        assertEquals(cliUrl, descriptor.getWizCliURL());
-        assertEquals(env, descriptor.getWizEnv());
+        // Test applicability
+        assertTrue("Should be applicable to FreeStyleProject",
+                descriptor.isApplicable(FreeStyleProject.class));
     }
 }

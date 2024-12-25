@@ -18,7 +18,7 @@ public class WizScannerAction implements RunAction2 {
     private static final String BASE_URL_NAME = "wiz-results";
     private static final String DEFAULT_DISPLAY_NAME = "Wiz Scanner";
 
-    private transient Run run;
+    private transient Run<?, ?> run;
     private final WizScannerResult scanDetails;
     private final String name;
     private final Run<?, ?> build;
@@ -97,7 +97,7 @@ public class WizScannerAction implements RunAction2 {
     }
 
     // Getters
-    public Run getRun() {
+    public Run<?, ?> getRun() {
         return run;
     }
 
@@ -109,6 +109,7 @@ public class WizScannerAction implements RunAction2 {
         return build;
     }
 
+    @SuppressWarnings("unused")
     public WizScannerResult getScanDetails() {
         return scanDetails;
     }

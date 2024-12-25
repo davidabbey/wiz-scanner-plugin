@@ -42,7 +42,7 @@ public class WizCliAuthenticator {
         authArgs.add(cliSetup.getCliCommand(), "auth", "--id");
         authArgs.addMasked(wizClientId);
         authArgs.add("--secret");
-        authArgs.addMasked(Secret.toString(wizSecretKey));
+        authArgs.addMasked(wizSecretKey.getPlainText());
 
         File errorFile = new File(workspace.getRemote(), "auth_error.txt");
 

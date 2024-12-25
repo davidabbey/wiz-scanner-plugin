@@ -74,8 +74,6 @@ public class WizScannerResultTest {
         assertTrue(result.getScanStatistics().isPresent());
         WizScannerResult.ScanStatistics stats = result.getScanStatistics().get();
         assertEquals(1, stats.getCriticalMatches());
-        assertEquals(10, stats.getFilesFound());
-        assertEquals(8, stats.getFilesParsed());
     }
 
     @Test
