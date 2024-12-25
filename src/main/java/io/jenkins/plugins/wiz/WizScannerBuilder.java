@@ -27,6 +27,7 @@ import org.jetbrains.annotations.NotNull;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 public class WizScannerBuilder extends Builder implements SimpleBuildStep {
     private static final Logger LOGGER = Logger.getLogger(WizScannerBuilder.class.getName());
@@ -176,6 +177,7 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
         private String wizCliURL;
         private String wizEnv;
 
+        @RequirePOST
         public FormValidation doCheckUserInput(@QueryParameter String value) {
             Jenkins.get().checkPermission(Permission.CONFIGURE);
 
