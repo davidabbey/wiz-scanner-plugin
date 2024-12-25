@@ -127,9 +127,10 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
             // Process results
             processResults(build, exitCode, workspace, listener, artifactInfo);
 
+        } catch (AbortException e) {
+            throw e;
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error during Wiz scan execution", e);
-            throw new RuntimeException("Wiz scan failed: " + e.getMessage(), e);
+            throw new AbortException("Wiz scan failed: " + e.getMessage());
         }
     }
 
@@ -144,11 +145,9 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
             Run<?, ?> build, int exitCode, FilePath workspace, TaskListener listener, ArtifactInfo artifactInfo)
             throws IOException {
 
-        if (exitCode == OK_CODE) {
-            File resultFile = new File(workspace.getRemote(), artifactInfo.name);
-            if (resultFile.exists() && resultFile.length() > 0) {
-                build.addAction(new WizScannerAction(build, workspace, artifactInfo.suffix, artifactInfo.name));
-            }
+        File resultFile = new File(workspace.getRemote(), artifactInfo.name);
+        if (resultFile.exists() && resultFile.length() > 0) {
+            build.addAction(new WizScannerAction(build, workspace, artifactInfo.suffix, artifactInfo.name));
         }
 
         try {

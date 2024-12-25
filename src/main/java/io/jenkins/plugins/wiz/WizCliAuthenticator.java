@@ -53,27 +53,54 @@ public class WizCliAuthenticator {
                     .pwd(workspace)
                     .envs(env)
                     .stderr(errorStream)
+                    .stdout(errorStream)
                     .quiet(true)
                     .join();
 
             if (result != 0) {
                 listener.error("Authentication failed with exit code: " + result);
-                String errorMessage = errorFile.exists() && errorFile.length() > 0
-                        ? Files.readString(errorFile.toPath())
-                        : "Authentication failed with exit code: " + result;
-                throw new AbortException("Wiz CLI authentication failed: " + errorMessage.trim());
+                String errorMessage = getCleanErrorMessage(errorFile);
+                throw new AbortException(errorMessage);
             }
-
         } finally {
-            if (errorFile.exists()) {
-                if (!errorFile.delete()) {
-                    LOGGER.log(Level.WARNING, "Failed to delete temporary error file: {0}",
-                            errorFile.getAbsolutePath());
-                }
-            }
+            cleanupErrorFile(errorFile);
+
         }
     }
 
+    /**
+     * Extracts a clean error message from the error file, removing ASCII art and formatting
+     */
+    private static String getCleanErrorMessage(File errorFile) throws IOException {
+        if (!errorFile.exists() || errorFile.length() == 0) {
+            return "Authentication failed";
+        }
+
+        String errorContent = Files.readString(errorFile.toPath());
+
+        // Find the actual error message
+        int errorIndex = errorContent.indexOf("ERROR:");
+        if (errorIndex >= 0) {
+            String errorMessage = errorContent.substring(errorIndex);
+            // Remove any ASCII art or unnecessary formatting
+            errorMessage = errorMessage.replaceAll("(?s)_.*?_", "").trim();
+            return errorMessage;
+        }
+
+        // If no specific error found, return a generic message
+        return "Authentication failed: " + errorContent.trim();
+    }
+
+    private static void cleanupErrorFile(File errorFile) {
+        if (errorFile.exists() && !errorFile.delete()) {
+            LOGGER.log(Level.WARNING, "Failed to delete temporary error file: {0}",
+                    errorFile.getAbsolutePath());
+        }
+    }
+
+    /**
+     * Logs out from the Wiz CLI
+     */
     public static int logout(
             Launcher launcher,
             FilePath workspace,

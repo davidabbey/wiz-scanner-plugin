@@ -1,5 +1,6 @@
 package io.jenkins.plugins.wiz;
 
+import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -69,7 +70,7 @@ public class WizCliRunner {
             return executeScan(build, workspace, env, launcher, listener, userInput, artifactName, cliSetup);
 
         } catch (Exception e) {
-            throw new IOException(e);
+            throw new AbortException("Error executing Wiz CLI: " + e.getMessage());
         } finally {
             if (cliSetup != null) {
                 try {
@@ -90,7 +91,6 @@ public class WizCliRunner {
                     listener.error("Warning: Failed to logout from Wiz CLI: " + e.getMessage());
                 }
             }
-
         }
     }
 
@@ -132,9 +132,9 @@ public class WizCliRunner {
                 listener.error("Scan failed with error output:");
                 listener.getLogger().println(Files.readString(errorFile.toPath()));
             }
-        } else {
-            copyOutputToArtifact(outputFile, workspace, artifactName);
         }
+
+        copyOutputToArtifact(outputFile, workspace, artifactName);
 
         return exitCode;
     }

@@ -94,7 +94,7 @@ public class WizCliDownloader {
             }
         } catch (Exception e) {
             listener.error("Failed to download or verify Wiz CLI: " + e.getMessage());
-            throw new IOException("Failed to setup Wiz CLI", e);
+            throw new AbortException("Failed to setup Wiz CLI: " + e.getMessage());
         }
     }
 
