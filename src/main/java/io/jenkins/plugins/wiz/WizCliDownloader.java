@@ -3,6 +3,7 @@ package io.jenkins.plugins.wiz;
 import hudson.AbortException;
 import hudson.FilePath;
 import hudson.model.TaskListener;
+import org.apache.commons.lang.SystemUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,18 +31,18 @@ public class WizCliDownloader {
     /**
      * Sets up the Wiz CLI by downloading and verifying the binary.
      */
-    public static WizCliSetup setupWizCli(FilePath workspace, String osName, String wizCliURL,
-                                         TaskListener listener) throws IOException {
+    public static WizCliSetup setupWizCli(FilePath workspace, String wizCliURL, TaskListener listener) throws IOException {
 
         try {
             // Validate CLI URL format before proceeding
             WizInputValidator.validateWizCliUrl(wizCliURL);
 
             // Detect OS and architecture
-            boolean isWindows = osName.contains("win");
-            boolean isMac = osName.contains("mac") || osName.contains("darwin");
-            String arch = System.getProperty("os.arch").toLowerCase();
+            boolean isWindows = SystemUtils.IS_OS_WINDOWS;
+            boolean isMac = SystemUtils.IS_OS_MAC || SystemUtils.IS_OS_MAC_OSX;
+            String arch = SystemUtils.OS_ARCH;
             String cliFileName = isWindows ? WizCliSetup.WIZCLI_WINDOWS_PATH : WizCliSetup.WIZCLI_UNIX_PATH;
+            String osName = SystemUtils.OS_NAME;
             String cliPath = workspace.child(cliFileName).getRemote();
 
             downloadAndVerifyWizCli(wizCliURL, cliPath, workspace, listener);

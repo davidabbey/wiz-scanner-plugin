@@ -40,11 +40,14 @@ public class WizCliSetup {
     }
 
     /**
-     * Gets the CLI path with proper prefix.
+     * Gets the CLI path with proper prefix based on operating system.
      *
-     * @return The CLI path with ./ prefix
+     * @return The CLI command appropriate for the current OS
      */
     public String getCliCommand() {
+        if (isWindows) {
+            return getExecutableName();
+        }
         return "./" + getExecutableName();
     }
 }
