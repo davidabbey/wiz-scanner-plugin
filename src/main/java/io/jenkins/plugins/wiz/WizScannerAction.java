@@ -18,10 +18,9 @@ public class WizScannerAction implements RunAction2 {
     private static final String BASE_URL_NAME = "wiz-results";
     private static final String DEFAULT_DISPLAY_NAME = "Wiz Scanner";
 
-    private transient Run run;
+    private transient Run<?, ?> run;
     private final WizScannerResult scanDetails;
     private final String name;
-    private final String resultsUrl;
     private final Run<?, ?> build;
     private final String artifactSuffix;
 
@@ -34,14 +33,11 @@ public class WizScannerAction implements RunAction2 {
      * @throws IllegalArgumentException if required parameters are null
      */
     public WizScannerAction(Run<?, ?> build, FilePath workspace, String artifactSuffix, String artifactName) {
-        if (build == null) throw new IllegalArgumentException("Build cannot be null");
-        if (workspace == null) throw new IllegalArgumentException("Workspace cannot be null");
-        if (artifactName == null) throw new IllegalArgumentException("Artifact name cannot be null");
+        WizInputValidator.validateScanAction(build, workspace, artifactName);
 
         this.name = artifactSuffix;
         this.build = build;
         this.artifactSuffix = artifactSuffix;
-        this.resultsUrl = "../artifact/" + artifactName;
 
         WizScannerResult loadedDetails = null;
         try {
@@ -92,18 +88,16 @@ public class WizScannerAction implements RunAction2 {
 
     @Override
     public String getDisplayName() {
-        return artifactSuffix == null ? DEFAULT_DISPLAY_NAME
-                : DEFAULT_DISPLAY_NAME + " " + artifactSuffix;
+        return artifactSuffix == null ? DEFAULT_DISPLAY_NAME : DEFAULT_DISPLAY_NAME + " " + artifactSuffix;
     }
 
     @Override
     public String getUrlName() {
-        return artifactSuffix == null ? BASE_URL_NAME
-                : BASE_URL_NAME + "-" + artifactSuffix;
+        return artifactSuffix == null ? BASE_URL_NAME : BASE_URL_NAME + "-" + artifactSuffix;
     }
 
     // Getters
-    public Run getRun() {
+    public Run<?, ?> getRun() {
         return run;
     }
 
@@ -115,10 +109,7 @@ public class WizScannerAction implements RunAction2 {
         return build;
     }
 
-    public String getResultsUrl() {
-        return resultsUrl;
-    }
-
+    @SuppressWarnings("unused")
     public WizScannerResult getScanDetails() {
         return scanDetails;
     }
