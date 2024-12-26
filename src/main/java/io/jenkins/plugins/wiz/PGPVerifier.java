@@ -91,48 +91,93 @@ public class PGPVerifier {
      */
     private PGPPublicKey readPublicKey(InputStream input) throws PGPVerificationException {
         try (ArmoredInputStream armoredInput = new ArmoredInputStream(input)) {
-            PGPPublicKeyRingCollection pgpRings = new PGPPublicKeyRingCollection(
-                    armoredInput,
-                    new BcKeyFingerprintCalculator());
-
-            // Iterate through all key rings
-            for (PGPPublicKeyRing keyRing : pgpRings) {
-                PGPPublicKey masterKey = keyRing.getPublicKey();
-                LOGGER.log(Level.FINE, "Processing keyring with master key: {0}",
-                        Long.toHexString(masterKey.getKeyID()));
-
-                // Check all subkeys
-                Iterator<PGPPublicKey> keys = keyRing.getPublicKeys();
-                while (keys.hasNext()) {
-                    PGPPublicKey key = keys.next();
-                    LOGGER.log(Level.FINE, "Examining key: {0}", Long.toHexString(key.getKeyID()));
-
-                    // Check key flags
-                    Iterator<?> sigs = key.getSignatures();
-                    while (sigs.hasNext()) {
-                        Object sig = sigs.next();
-                        if (sig instanceof PGPSignature) {
-                            PGPSignature signature = (PGPSignature) sig;
-                            PGPSignatureSubpacketVector hashedSigs = signature.getHashedSubPackets();
-                            if (hashedSigs != null) {
-                                int keyFlags = hashedSigs.getKeyFlags();
-                                LOGGER.log(Level.FINE, "Key flags: {0}", keyFlags);
-
-                                // Check if key is designated for signing
-                                if (!key.isMasterKey() && (keyFlags & PGPKeyFlags.CAN_SIGN) != 0) {
-                                    LOGGER.log(Level.INFO, "Found suitable signing key");
-                                    return key;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            throw new PGPVerificationException("No suitable signing key found in provided key ring");
+            PGPPublicKeyRingCollection pgpRings = readKeyRingCollection(armoredInput);
+            return findSigningKey(pgpRings);
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to read public key: {0}", e.getMessage());
             throw new PGPVerificationException("Failed to read public key", e);
         }
+    }
+
+    /**
+     * Creates a PGPPublicKeyRingCollection from an input stream.
+     */
+    private PGPPublicKeyRingCollection readKeyRingCollection(ArmoredInputStream input)
+            throws IOException, PGPException {
+        return new PGPPublicKeyRingCollection(input, new BcKeyFingerprintCalculator());
+    }
+
+    /**
+     * Finds a suitable signing key from the key ring collection.
+     */
+    private PGPPublicKey findSigningKey(PGPPublicKeyRingCollection pgpRings)
+            throws PGPVerificationException {
+        for (PGPPublicKeyRing keyRing : pgpRings) {
+            PGPPublicKey signingKey = findSigningKeyInRing(keyRing);
+            if (signingKey != null) {
+                return signingKey;
+            }
+        }
+        throw new PGPVerificationException("No suitable signing key found in provided key ring");
+    }
+
+    /**
+     * Searches for a signing key within a specific key ring.
+     */
+    private PGPPublicKey findSigningKeyInRing(PGPPublicKeyRing keyRing) {
+        PGPPublicKey masterKey = keyRing.getPublicKey();
+        LOGGER.log(Level.FINE, "Processing keyring with master key: {0}",
+                Long.toHexString(masterKey.getKeyID()));
+
+        Iterator<PGPPublicKey> keys = keyRing.getPublicKeys();
+        while (keys.hasNext()) {
+            PGPPublicKey key = keys.next();
+            if (isValidSigningKey(key)) {
+                return key;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Checks if a key is valid for signing by examining its signatures and flags.
+     */
+    private boolean isValidSigningKey(PGPPublicKey key) {
+        LOGGER.log(Level.FINE, "Examining key: {0}", Long.toHexString(key.getKeyID()));
+
+        Iterator<?> sigs = key.getSignatures();
+        while (sigs.hasNext()) {
+            if (hasValidSigningFlag(sigs.next(), key)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Checks if a signature indicates the key is valid for signing.
+     */
+    private boolean hasValidSigningFlag(Object sig, PGPPublicKey key) {
+        if (!(sig instanceof PGPSignature)) {
+            return false;
+        }
+
+        PGPSignature signature = (PGPSignature) sig;
+        PGPSignatureSubpacketVector hashedSigs = signature.getHashedSubPackets();
+
+        if (hashedSigs == null) {
+            return false;
+        }
+
+        int keyFlags = hashedSigs.getKeyFlags();
+        LOGGER.log(Level.FINE, "Key flags: {0}", keyFlags);
+
+        if (!key.isMasterKey() && (keyFlags & PGPKeyFlags.CAN_SIGN) != 0) {
+            LOGGER.log(Level.INFO, "Found suitable signing key");
+            return true;
+        }
+
+        return false;
     }
 
     /**
