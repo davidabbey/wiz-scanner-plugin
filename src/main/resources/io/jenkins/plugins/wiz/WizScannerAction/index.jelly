@@ -2,125 +2,227 @@
 <j:jelly xmlns:j="jelly:core" xmlns:l="/lib/layout" xmlns:st="jelly:stapler">
     <l:layout title="Wiz CLI scan results">
         <l:side-panel>
-            <st:include page="sidepanel.jelly" it="${it.build}" optional="true" />
+            <st:include page="sidepanel.jelly" it="${it.run}" optional="true" />
         </l:side-panel>
         <l:main-panel>
             <j:choose>
                 <j:when test="${it.scanDetails != null}">
-                            <title>Wiz CLI Scan Results</title>
-                            <style>
-                                body { font-family: Arial, sans-serif;  }
-                                .container { width: 100%; margin: auto; padding: 20px; border-radius: 5px; background: white; }
-                                .header { font-size: 1.5em; margin-bottom: 20px; display: flex; align-items: center; }
-                                .header span { margin-left: 10px; }
-                                .section { margin-bottom: 35px; }
-                                .section strong { display: inline-block; width: 150px; }
-                                .last-section { margin-bottom: 0px; }
-                                .last-section strong { display: inline-block; width: 150px; }
-                                .status {font-weight: 400; border-radius: 24px; text-align: center; padding-top: .124rem; padding-bottom: .125rem; padding-left: 9px; padding-right: 9px;}
-                                .passed { color: rgb(0, 120, 62); background: rgb(212, 238, 226);}
-                                .warned {  color: rgb(149, 89, 30); background: rgb(250, 227, 205);}
-                                .failed {  color: rgb(191, 14, 8); background: rgb(250, 226, 226);}
-                                .table { width: 50%; border-collapse: separate; border-spacing: 0 35px; }
-                                .table th, .table td { padding-top: 8px; text-align: left; border: none; }
-                                .severity-count { margin-right: 6px;}
-                                .severity-icon { display: inline-block; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-weight: 500; margin-right: 8px; font-size: 12px;}
-                                .critical { border: 1px solid hsl( 359deg 74.2% 81.7% ); background-color: hsl( 360deg 100% 96.8% ); color: hsl( 358deg 65% 47% ); }
-                                .high { background-color: hsl( 34deg 100% 91.7% ); color: hsl( 16deg 45% 41.5% ); border: 1px solid hsl( 21deg 100% 74.5% );}
-                                .medium { background-color: hsl( 53deg 100% 88.9% ); color: hsl( 42deg 50% 31% ); border: 1px solid hsl( 48deg 59.6% 64.3% ); }
-                                .low { background-color: hsl( 239deg 13.4% 95.4% ); color: hsl( 220deg 6% 40% ); border: 1px solid hsl( 234deg 10.4% 84.4% ); }
-                                .infos { background-color: hsl( 239deg 13.4% 95.4% ); color: hsl( 220deg 6% 40% ); border: 1px solid hsl( 234deg 10.4% 84.4% ); }
-                                .scan-results a { color: blue; text-decoration: none; }
-                                .scan-results a:hover { text-decoration: underline; }
-                                .icon-container {
-                                display: inline-flex;
-                                align-items: center;
-                                background-color: #f0f0f0;
-                                border-radius: 5px;
-                                padding: 4px;
-                                }
-                                .icon-container svg {
-                                height: 1em;
-                                width: auto;
-                                vertical-align: middle;
-                                }
-                            </style>
-                            <div class="container">
-                                <div class="header">
-                                    <l:icon src="symbol-wiz plugin-wiz-scanner" class="icon-md"/>
-                                    <span>Wiz Scan Results</span>
-                                </div>
-                                <div class="section">
-                                    <strong>Scanned resource</strong>${it.scanDetails.getScannedResource()}
-                                </div>
-                                <div class="section">
-                                    <strong>Scan Verdict</strong>
-                                    <span class="
-                                            ${it.scanDetails.getStatus().matches('Passed') ? 'status passed' : ''}
-                                            ${it.scanDetails.getStatus().matches('Warned') ? 'status warned' : ''}
-                                            ${it.scanDetails.getStatus().matches('Failed') ? 'status failed' : ''}">
-                                        ${it.scanDetails.getStatus()}
-                                    </span>
-                                </div>
-                                <div class="section">
-                                    <strong>Scan results in Wiz</strong>
-                                    <j:choose>
-                                        <j:when test="${!empty(it.scanDetails.getReportUrl())}">
-                                            <a href="${it.scanDetails.getReportUrl()}">Click here</a>
-                                        </j:when>
-                                        <j:otherwise>
-                                            <span>No report URL available</span>
-                                        </j:otherwise>
-                                    </j:choose>
-                                </div>
-                                <div class="last-section">
-                                    <strong>Scan time</strong>${it.scanDetails.getScanTime()}
-                                </div>
-                                <table class="table">
-                                    <tbody>
-                                        <tr>
-                                            <td>
-                                                <l:icon src="symbol-misconfiguration plugin-wiz-scanner" class="icon-md"/>
-                                                <span> Misconfigurations</span>
-                                            </td>
-                                            <td><span class="severity-count">${it.scanDetails.getScanStatisticsCriticalMatches()}</span><span class="severity-icon critical">C</span></td>
-                                            <td><span class="severity-count">${it.scanDetails.getScanStatisticsHighMatches()}</span><span class="severity-icon high">H</span></td>
-                                            <td><span class="severity-count">${it.scanDetails.getScanStatisticsMediumMatches()}</span><span class="severity-icon medium">M</span></td>
-                                            <td><span class="severity-count">${it.scanDetails.getScanStatisticsLowMatches()}</span><span class="severity-icon low">L</span></td>
-                                            <td><span class="severity-count">${it.scanDetails.getScanStatisticsInfoMatches()}</span><span class="severity-icon infos">I</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <l:icon src="symbol-vulnerability plugin-wiz-scanner" class="icon-md"/>
-                                                <span> Vulnerabilities</span>
-                                            </td>
-                                            <td><span class="severity-count">${it.scanDetails.getVulnerabilitiesCriticalCount()}</span><span class="severity-icon critical">C</span></td>
-                                            <td><span class="severity-count">${it.scanDetails.getVulnerabilitiesHighCount()}</span><span class="severity-icon high">H</span></td>
-                                            <td><span class="severity-count">${it.scanDetails.getVulnerabilitiesMediumCount()}</span><span class="severity-icon medium">M</span></td>
-                                            <td><span class="severity-count">${it.scanDetails.getVulnerabilitiesLowCount()}</span><span class="severity-icon low">L</span></td>
-                                            <td><span class="severity-count">${it.scanDetails.getVulnerabilitiesInfoCount()}</span><span class="severity-icon infos">I</span></td>
-
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                <l:icon src="symbol-secret plugin-wiz-scanner" class="icon-md"/>
-                                                <span> Secrets</span>
-                                            </td>
-                                            <td><span class="severity-count">${it.scanDetails.getSecretsCriticalCount()}</span><span class="severity-icon critical">C</span></td>
-                                            <td><span class="severity-count">${it.scanDetails.getSecretsHighCount()}</span><span class="severity-icon high">H</span></td>
-                                            <td><span class="severity-count">${it.scanDetails.getSecretsMediumCount()}</span><span class="severity-icon medium">M</span></td>
-                                            <td><span class="severity-count">${it.scanDetails.getSecretsLowCount()}</span><span class="severity-icon low">L</span></td>
-                                            <td><span class="severity-count">${it.scanDetails.getSecretsInfoCount()}</span><span class="severity-icon infos">I</span></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                    <div class="jenkins-app-bar jenkins-app-bar--border">
+                        <div class="jenkins-app-bar__content">
+                            <div class="jenkins-app-bar__controls">
+                                <h1><l:icon src="symbol-wiz plugin-wiz-scanner" class="icon-md"/> Wiz Scan Results</h1>
                             </div>
+                        </div>
+                    </div>
+
+                    <div class="jenkins-section">
+                        <div class="jenkins-section__item">
+                            <div class="jenkins-form-label">Scanned resource</div>
+                            <div class="jenkins-form-item">${it.scanDetails.getScannedResource()}</div>
+                        </div>
+
+                        <div class="jenkins-section__item">
+                            <div class="jenkins-form-label">Scan Verdict</div>
+                            <div class="jenkins-form-item">
+                                <span class="
+                                    ${it.scanDetails.getStatus().matches('Passed') ? 'status passed' : ''}
+                                    ${it.scanDetails.getStatus().matches('Warned') ? 'status warned' : ''}
+                                    ${it.scanDetails.getStatus().matches('Failed') ? 'status failed' : ''}">
+                                    ${it.scanDetails.getStatus()}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="jenkins-section__item">
+                            <div class="jenkins-form-label">Scan results in Wiz</div>
+                            <div class="jenkins-form-item">
+                                <j:choose>
+                                    <j:when test="${!empty(it.scanDetails.getReportUrl())}">
+                                        <a href="${it.scanDetails.getReportUrl()}">Click here</a>
+                                    </j:when>
+                                    <j:otherwise>
+                                        <span>No report URL available</span>
+                                    </j:otherwise>
+                                </j:choose>
+                            </div>
+                        </div>
+
+                        <div class="jenkins-section__item">
+                            <div class="jenkins-form-label">Scan time</div>
+                            <div class="jenkins-form-item">${it.scanDetails.getScanTime()}</div>
+                        </div>
+                    </div>
+                    <style>
+                        .status {
+                        font-weight: 400;
+                        border-radius: 24px;
+                        text-align: center;
+                        padding-top: .124rem;
+                        padding-bottom: .125rem;
+                        padding-left: 9px;
+                        padding-right: 9px;
+                        }
+
+                        /* Light mode (default) styles */
+                        .passed {
+                        color: rgb(0, 120, 62);
+                        background: rgb(212, 238, 226);
+                        }
+
+                        .warned {
+                        color: rgb(149, 89, 30);
+                        background: rgb(250, 227, 205);
+                        }
+
+                        .failed {
+                        color: rgb(191, 14, 8);
+                        background: rgb(250, 226, 226);
+                        }
+
+                        .severity-count {
+                        margin-right: 6px;
+                        }
+
+                        .severity-icon {
+                        display: inline-block;
+                        width: 24px;
+                        height: 24px;
+                        border-radius: 50%;
+                        text-align: center;
+                        line-height: 24px;
+                        font-weight: 500;
+                        margin-right: 8px;
+                        font-size: 12px;
+                        }
+
+                        .critical {
+                        border: 1px solid hsl(359deg 74.2% 81.7%);
+                        background-color: hsl(360deg 100% 96.8%);
+                        color: hsl(358deg 65% 47%);
+                        }
+
+                        .high {
+                        background-color: hsl(34deg 100% 91.7%);
+                        color: hsl(16deg 45% 41.5%);
+                        border: 1px solid hsl(21deg 100% 74.5%);
+                        }
+
+                        .medium {
+                        background-color: hsl(53deg 100% 88.9%);
+                        color: hsl(42deg 50% 31%);
+                        border: 1px solid hsl(48deg 59.6% 64.3%);
+                        }
+
+                        .low, .infos {
+                        background-color: hsl(239deg 13.4% 95.4%);
+                        color: hsl(220deg 6% 40%);
+                        border: 1px solid hsl(234deg 10.4% 84.4%);
+                        }
+
+                        /* Dark mode styles */
+                        [data-theme="dark"] .passed {
+                        color: #4ade80;
+                        background: rgba(74, 222, 128, 0.2);
+                        }
+
+                        [data-theme="dark"] .warned {
+                        color: #fbbf24;
+                        background: rgba(251, 191, 36, 0.2);
+                        }
+
+                        [data-theme="dark"] .failed {
+                        color: #f87171;
+                        background: rgba(248, 113, 113, 0.2);
+                        }
+
+                        [data-theme="dark"] .severity-icon.critical {
+                        background-color: rgba(248, 113, 113, 0.2);
+                        color: #f87171;
+                        border-color: #991b1b;
+                        }
+
+                        [data-theme="dark"] .severity-icon.high {
+                        background-color: rgba(251, 146, 60, 0.2);
+                        color: #fb923c;
+                        border-color: #9a3412;
+                        }
+
+                        [data-theme="dark"] .severity-icon.medium {
+                        background-color: rgba(250, 204, 21, 0.2);
+                        color: #facc15;
+                        border-color: #854d0e;
+                        }
+
+                        [data-theme="dark"] .severity-icon.low,
+                        [data-theme="dark"] .severity-icon.infos {
+                        background-color: rgba(148, 163, 184, 0.2);
+                        color: #94a3b8;
+                        border-color: #475569;
+                        }
+
+                        /* Additional dark mode adjustments for better visibility */
+                        [data-theme="dark"] .jenkins-table {
+                        border-color: #404040;
+                        }
+
+                        [data-theme="dark"] .jenkins-table th {
+                        color: #e0e0e0;
+                        }
+
+                        [data-theme="dark"] .jenkins-form-label {
+                        color: #e0e0e0;
+                        }
+
+                        [data-theme="dark"] .jenkins-form-item {
+                        color: #ffffff;
+                        }
+                    </style>
+                    <table class="jenkins-table sortable ${iconSize == '16x16' ? 'jenkins-table--small' : iconSize == '24x24' ? 'jenkins-table--medium' : ''}">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Critical</th>
+                                <th>High</th>
+                                <th>Medium</th>
+                                <th>Low</th>
+                                <th>Info</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Misconfigurations</td>
+                                <td><span class="severity-count">${it.scanDetails.getScanStatisticsCriticalMatches()}</span><span class="severity-icon critical">C</span></td>
+                                <td><span class="severity-count">${it.scanDetails.getScanStatisticsHighMatches()}</span><span class="severity-icon high">H</span></td>
+                                <td><span class="severity-count">${it.scanDetails.getScanStatisticsMediumMatches()}</span><span class="severity-icon medium">M</span></td>
+                                <td><span class="severity-count">${it.scanDetails.getScanStatisticsLowMatches()}</span><span class="severity-icon low">L</span></td>
+                                <td><span class="severity-count">${it.scanDetails.getScanStatisticsInfoMatches()}</span><span class="severity-icon infos">I</span></td>
+                            </tr>
+                            <tr>
+                                <td>Vulnerabilities</td>
+                                <td><span class="severity-count">${it.scanDetails.getVulnerabilitiesCriticalCount()}</span><span class="severity-icon critical">C</span></td>
+                                <td><span class="severity-count">${it.scanDetails.getVulnerabilitiesHighCount()}</span><span class="severity-icon high">H</span></td>
+                                <td><span class="severity-count">${it.scanDetails.getVulnerabilitiesMediumCount()}</span><span class="severity-icon medium">M</span></td>
+                                <td><span class="severity-count">${it.scanDetails.getVulnerabilitiesLowCount()}</span><span class="severity-icon low">L</span></td>
+                                <td><span class="severity-count">${it.scanDetails.getVulnerabilitiesInfoCount()}</span><span class="severity-icon infos">I</span></td>
+                            </tr>
+                            <tr>
+                                <td>Secrets</td>
+                                <td><span class="severity-count">${it.scanDetails.getSecretsCriticalCount()}</span><span class="severity-icon critical">C</span></td>
+                                <td><span class="severity-count">${it.scanDetails.getSecretsHighCount()}</span><span class="severity-icon high">H</span></td>
+                                <td><span class="severity-count">${it.scanDetails.getSecretsMediumCount()}</span><span class="severity-icon medium">M</span></td>
+                                <td><span class="severity-count">${it.scanDetails.getSecretsLowCount()}</span><span class="severity-icon low">L</span></td>
+                                <td><span class="severity-count">${it.scanDetails.getSecretsInfoCount()}</span><span class="severity-icon infos">I</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </j:when>
                 <j:otherwise>
-                        <div class="error">
+                    <div class="jenkins-section">
+                        <div class="alert alert-danger">
                             <h3>No Scan Results Available</h3>
                             <p>The scan may have failed or produced no results. Please check the build console output for details.</p>
                         </div>
+                    </div>
                 </j:otherwise>
             </j:choose>
         </l:main-panel>
