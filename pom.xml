@@ -34,7 +34,7 @@
     <changelist />
 
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
-    <jenkins.version>2.440.3</jenkins.version>
+    <jenkins.version>2.452.4</jenkins.version>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
 
     <spotless.check.skip>false</spotless.check.skip>
@@ -60,9 +60,9 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <version>3.17.0</version>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>commons-lang3-api</artifactId>
+      <version>3.17.0-84.vb_b_938040b_078</version>
     </dependency>
     <dependency>
       <groupId>org.bouncycastle</groupId>
@@ -81,9 +81,9 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>net.bytebuddy</groupId>
-      <artifactId>byte-buddy</artifactId>
-      <version>1.14.4</version>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>byte-buddy-api</artifactId>
+      <version>1.15.11-99.v078c614a_5258</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>

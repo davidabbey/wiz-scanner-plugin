@@ -14,14 +14,13 @@ import jenkins.model.RunAction2;
  */
 public class WizScannerAction implements RunAction2 {
     private static final Logger LOGGER = Logger.getLogger(WizScannerAction.class.getName());
-    private static final String DEFAULT_ICON = "plugin/wiz-scanner/images/wiz.png";
+    private static final String DEFAULT_ICON = "symbol-wiz plugin-wiz-scanner";
     private static final String BASE_URL_NAME = "wiz-results";
     private static final String DEFAULT_DISPLAY_NAME = "Wiz Scanner";
 
     private transient Run<?, ?> run;
     private final WizScannerResult scanDetails;
     private final String name;
-    private final Run<?, ?> build;
     private final String artifactSuffix;
 
     /**
@@ -36,8 +35,8 @@ public class WizScannerAction implements RunAction2 {
         WizInputValidator.validateScanAction(build, workspace, artifactName);
 
         this.name = artifactSuffix;
-        this.build = build;
         this.artifactSuffix = artifactSuffix;
+        this.run = build;
 
         WizScannerResult loadedDetails = null;
         try {
@@ -103,10 +102,6 @@ public class WizScannerAction implements RunAction2 {
 
     public String getName() {
         return name;
-    }
-
-    public Run<?, ?> getBuild() {
-        return build;
     }
 
     @SuppressWarnings("unused")
