@@ -4,17 +4,16 @@ import hudson.AbortException;
 import hudson.FilePath;
 import hudson.model.TaskListener;
 import org.apache.commons.lang.SystemUtils;
+import org.apache.commons.io.IOUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -43,24 +42,26 @@ public class WizCliDownloader {
             String arch = SystemUtils.OS_ARCH;
             String cliFileName = isWindows ? WizCliSetup.WIZCLI_WINDOWS_PATH : WizCliSetup.WIZCLI_UNIX_PATH;
             String osName = SystemUtils.OS_NAME;
-            String cliPath = workspace.child(cliFileName).getRemote();
+            FilePath cliPath = workspace.child(cliFileName);
 
             downloadAndVerifyWizCli(wizCliURL, cliPath, workspace, listener);
 
             if (!isWindows) {
-                makeExecutable(cliPath);
+                cliPath.chmod(0755);
             }
 
-            return new WizCliSetup(cliPath, isWindows, isMac, osName, arch);
+            return new WizCliSetup(cliPath.getRemote(), isWindows, isMac, osName, arch);
 
         } catch (AbortException e) {
             listener.error("Invalid Wiz CLI URL format: " + e.getMessage());
             throw e;
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
     private static void downloadAndVerifyWizCli(
-            String wizCliURL, String cliPath, FilePath workspace, TaskListener listener)
+            String wizCliURL, FilePath cliPath, FilePath workspace, TaskListener listener)
             throws IOException {
         try {
             // Download CLI
@@ -79,15 +80,15 @@ public class WizCliDownloader {
 
             try {
                 // Download verification files
-                downloadFile(sha256URL, sha256File.getRemote());
-                downloadFile(signatureURL, signatureFile.getRemote());
+                downloadFile(sha256URL, sha256File);
+                downloadFile(signatureURL, signatureFile);
 
                 // Extract public key from resources
                 extractPublicKey(publicKeyFile);
 
                 // Verify signature and checksum
                 verifySignatureAndChecksum(
-                        listener, cliPath, sha256File.getRemote(), signatureFile.getRemote(), publicKeyFile.getRemote());
+                        listener, cliPath, sha256File, signatureFile, publicKeyFile);
 
             } finally {
                 // Clean up verification files
@@ -118,9 +119,13 @@ public class WizCliDownloader {
         }
     }
 
-    private static void downloadFile(String fileURL, String savePath) throws IOException {
+    private static void downloadFile(String fileURL, FilePath targetPath) throws IOException {
         URL url = new URL(fileURL);
         HttpURLConnection conn = null;
+
+        InputStream inputStream = null;
+        OutputStream outputStream = null;
+
         try {
             conn = (HttpURLConnection) url.openConnection();
             conn.setConnectTimeout(CONNECT_TIMEOUT);
@@ -130,30 +135,32 @@ public class WizCliDownloader {
             if (responseCode != HttpURLConnection.HTTP_OK) {
                 throw new IOException("Download failed with HTTP code: " + responseCode);
             }
-
-            Path targetPath = Paths.get(savePath);
-            Files.copy(conn.getInputStream(), targetPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-
+            Objects.requireNonNull(targetPath.getParent()).mkdirs();
+            inputStream = conn.getInputStream();
+            outputStream = targetPath.write();
+            IOUtils.copy(inputStream, outputStream);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         } finally {
-            if (conn != null) {
-                conn.disconnect();
-            }
+            if (inputStream != null) inputStream.close();
+            if (outputStream != null) outputStream.close();
+            if (conn != null) conn.disconnect();
         }
     }
 
     private static void verifySignatureAndChecksum(
-            TaskListener listener, String cliPath, String sha256Path, String signaturePath, String publicKeyPath)
+            TaskListener listener, FilePath cliPath, FilePath sha256File, FilePath signaturePath, FilePath publicKeyPath)
             throws IOException {
         try {
             PGPVerifier verifier = new PGPVerifier();
-            boolean verified = verifier.verifySignatureFromFiles(sha256Path, signaturePath, publicKeyPath);
+            boolean verified = verifier.verifySignatureFromFiles(sha256File.getRemote(), signaturePath.getRemote(), publicKeyPath.getRemote());
 
             if (!verified) {
                 throw new IOException("GPG signature verification failed");
             }
 
             // Continue with checksum verification
-            verifyChecksum(cliPath, sha256Path);
+            verifyChecksum(cliPath, sha256File);
 
             listener.getLogger().println("Successfully verified Wiz CLI signature and checksum");
         } catch (Exception e) {
@@ -161,8 +168,8 @@ public class WizCliDownloader {
         }
     }
 
-    private static void verifyChecksum(String cliPath, String sha256Path) throws IOException {
-        String expectedHash = new String(Files.readAllBytes(Paths.get(sha256Path))).trim();
+    private static void verifyChecksum(FilePath cliPath, FilePath sha256File) throws IOException, InterruptedException {
+        String expectedHash = sha256File.readToString().trim();
         String actualHash = calculateSHA256(cliPath);
 
         if (!expectedHash.equals(actualHash)) {
@@ -170,10 +177,11 @@ public class WizCliDownloader {
         }
     }
 
-    private static String calculateSHA256(String filePath) throws IOException {
+    private static String calculateSHA256(FilePath filePath) throws IOException {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(Files.readAllBytes(Paths.get(filePath)));
+            byte[] fileBytes = IOUtils.toByteArray(filePath.read());
+            byte[] hash = digest.digest(fileBytes);
             StringBuilder hexString = new StringBuilder();
 
             for (byte b : hash) {
@@ -188,23 +196,6 @@ public class WizCliDownloader {
         }
     }
 
-    /**
-     * Makes the CLI file executable using Java file permissions.
-     *
-     * @param cliPath Path to the CLI executable
-     * @throws IOException if setting the executable permission fails
-     */
-    private static void makeExecutable(String cliPath) throws IOException {
-        File cliFile = new File(cliPath);
-
-        if (!cliFile.exists()) {
-            throw new IOException("CLI file not found at: " + cliPath);
-        }
-
-        if (!cliFile.setExecutable(true, true)) {  // true, true means executable by owner only
-            throw new IOException("Failed to make CLI executable: " + cliPath);
-        }
-    }
 
     private static void cleanupVerificationFiles(FilePath workspace, TaskListener listener) {
         FilePath[] filesToClean = {
