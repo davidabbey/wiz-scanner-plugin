@@ -2,7 +2,9 @@ package io.jenkins.plugins.wiz;
 
 import hudson.AbortException;
 import hudson.FilePath;
+import hudson.ProxyConfiguration;
 import hudson.model.TaskListener;
+import jenkins.model.Jenkins;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -127,7 +129,9 @@ public class WizCliDownloader {
         OutputStream outputStream = null;
 
         try {
-            conn = (HttpURLConnection) url.openConnection();
+            ProxyConfiguration proxyConfig = Jenkins.get().getProxy();
+            conn = (HttpURLConnection) (proxyConfig != null ?
+            url.openConnection(proxyConfig.createProxy(url.getHost())) : url.openConnection());
             conn.setConnectTimeout(CONNECT_TIMEOUT);
             conn.setReadTimeout(DOWNLOAD_TIMEOUT);
 
