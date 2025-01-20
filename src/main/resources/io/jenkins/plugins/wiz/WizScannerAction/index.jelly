@@ -5,6 +5,7 @@
             <st:include page="sidepanel.jelly" it="${it.run}" optional="true" />
         </l:side-panel>
         <l:main-panel>
+            <link rel="stylesheet" type="text/css" href="${resURL}/plugin/wiz-scanner/css/style.css"/>
             <j:choose>
                 <j:when test="${it.scanDetails != null}">
                     <div class="jenkins-app-bar jenkins-app-bar--border">
@@ -52,131 +53,6 @@
                             <div class="jenkins-form-item">${it.scanDetails.getScanTime()}</div>
                         </div>
                     </div>
-                    <style>
-                        .status {
-                        font-weight: 400;
-                        border-radius: 24px;
-                        text-align: center;
-                        padding-top: .124rem;
-                        padding-bottom: .125rem;
-                        padding-left: 9px;
-                        padding-right: 9px;
-                        }
-
-                        /* Light mode (default) styles */
-                        .passed {
-                        color: rgb(0, 120, 62);
-                        background: rgb(212, 238, 226);
-                        }
-
-                        .warned {
-                        color: rgb(149, 89, 30);
-                        background: rgb(250, 227, 205);
-                        }
-
-                        .failed {
-                        color: rgb(191, 14, 8);
-                        background: rgb(250, 226, 226);
-                        }
-
-                        .severity-count {
-                        margin-right: 6px;
-                        }
-
-                        .severity-icon {
-                        display: inline-block;
-                        width: 24px;
-                        height: 24px;
-                        border-radius: 50%;
-                        text-align: center;
-                        line-height: 24px;
-                        font-weight: 500;
-                        margin-right: 8px;
-                        font-size: 12px;
-                        }
-
-                        .critical {
-                        border: 1px solid hsl(359deg 74.2% 81.7%);
-                        background-color: hsl(360deg 100% 96.8%);
-                        color: hsl(358deg 65% 47%);
-                        }
-
-                        .high {
-                        background-color: hsl(34deg 100% 91.7%);
-                        color: hsl(16deg 45% 41.5%);
-                        border: 1px solid hsl(21deg 100% 74.5%);
-                        }
-
-                        .medium {
-                        background-color: hsl(53deg 100% 88.9%);
-                        color: hsl(42deg 50% 31%);
-                        border: 1px solid hsl(48deg 59.6% 64.3%);
-                        }
-
-                        .low, .infos {
-                        background-color: hsl(239deg 13.4% 95.4%);
-                        color: hsl(220deg 6% 40%);
-                        border: 1px solid hsl(234deg 10.4% 84.4%);
-                        }
-
-                        /* Dark mode styles */
-                        [data-theme="dark"] .passed {
-                        color: #4ade80;
-                        background: rgba(74, 222, 128, 0.2);
-                        }
-
-                        [data-theme="dark"] .warned {
-                        color: #fbbf24;
-                        background: rgba(251, 191, 36, 0.2);
-                        }
-
-                        [data-theme="dark"] .failed {
-                        color: #f87171;
-                        background: rgba(248, 113, 113, 0.2);
-                        }
-
-                        [data-theme="dark"] .severity-icon.critical {
-                        background-color: rgba(248, 113, 113, 0.2);
-                        color: #f87171;
-                        border-color: #991b1b;
-                        }
-
-                        [data-theme="dark"] .severity-icon.high {
-                        background-color: rgba(251, 146, 60, 0.2);
-                        color: #fb923c;
-                        border-color: #9a3412;
-                        }
-
-                        [data-theme="dark"] .severity-icon.medium {
-                        background-color: rgba(250, 204, 21, 0.2);
-                        color: #facc15;
-                        border-color: #854d0e;
-                        }
-
-                        [data-theme="dark"] .severity-icon.low,
-                        [data-theme="dark"] .severity-icon.infos {
-                        background-color: rgba(148, 163, 184, 0.2);
-                        color: #94a3b8;
-                        border-color: #475569;
-                        }
-
-                        /* Additional dark mode adjustments for better visibility */
-                        [data-theme="dark"] .jenkins-table {
-                        border-color: #404040;
-                        }
-
-                        [data-theme="dark"] .jenkins-table th {
-                        color: #e0e0e0;
-                        }
-
-                        [data-theme="dark"] .jenkins-form-label {
-                        color: #e0e0e0;
-                        }
-
-                        [data-theme="dark"] .jenkins-form-item {
-                        color: #ffffff;
-                        }
-                    </style>
                     <table class="jenkins-table sortable ${iconSize == '16x16' ? 'jenkins-table--small' : iconSize == '24x24' ? 'jenkins-table--medium' : ''}">
                         <thead>
                             <tr>
