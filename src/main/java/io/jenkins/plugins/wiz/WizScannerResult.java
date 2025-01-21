@@ -1,8 +1,6 @@
 package io.jenkins.plugins.wiz;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
@@ -10,6 +8,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import hudson.FilePath;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
 import org.apache.commons.lang.StringUtils;
@@ -305,13 +305,13 @@ public class WizScannerResult {
      * @param jsonFile The JSON file to parse
      * @return The parsed WizScannerResult or null if parsing fails
      */
-    public static WizScannerResult fromJsonFile(File jsonFile) {
+    public static WizScannerResult fromJsonFile(FilePath jsonFile) {
         try {
             if (jsonFile == null || !jsonFile.exists()) {
                 throw new IOException("JSON file does not exist");
             }
 
-            String content = Files.readString(jsonFile.toPath());
+            String content = jsonFile.readToString();
             if (StringUtils.isBlank(content)) {
                 throw new IOException("JSON file is empty");
             }

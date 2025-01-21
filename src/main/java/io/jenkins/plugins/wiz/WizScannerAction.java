@@ -2,7 +2,7 @@ package io.jenkins.plugins.wiz;
 
 import hudson.FilePath;
 import hudson.model.Run;
-import java.io.File;
+
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -40,7 +40,8 @@ public class WizScannerAction implements RunAction2 {
 
         WizScannerResult loadedDetails = null;
         try {
-            loadedDetails = loadScanDetails(new File(workspace.getRemote(), artifactName));
+            FilePath resultsFile = workspace.child(artifactName);
+            loadedDetails = loadScanDetails(resultsFile);
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to load scan details", e);
         }
@@ -53,17 +54,14 @@ public class WizScannerAction implements RunAction2 {
      * @return The parsed WizScannerResult
      * @throws IOException if the file cannot be read
      */
-    private WizScannerResult loadScanDetails(File jsonFile) throws IOException {
+    private WizScannerResult loadScanDetails(FilePath jsonFile) throws IOException, InterruptedException {
         if (!jsonFile.exists()) {
-            throw new IOException("Results file does not exist: " + jsonFile.getPath());
-        }
-        if (!jsonFile.canRead()) {
-            throw new IOException("Cannot read results file: " + jsonFile.getPath());
+            throw new IOException("Results file does not exist: " + jsonFile.getRemote());
         }
 
         WizScannerResult result = WizScannerResult.fromJsonFile(jsonFile);
         if (result == null) {
-            throw new IOException("Failed to parse scan results from: " + jsonFile.getPath());
+            throw new IOException("Failed to parse scan results from: " + jsonFile.getRemote());
         }
         return result;
     }

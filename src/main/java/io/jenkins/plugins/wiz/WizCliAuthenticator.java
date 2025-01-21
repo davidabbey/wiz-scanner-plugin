@@ -8,11 +8,9 @@ import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.Secret;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -44,9 +42,12 @@ public class WizCliAuthenticator {
         authArgs.add("--secret");
         authArgs.addMasked(wizSecretKey.getPlainText());
 
-        File errorFile = new File(workspace.getRemote(), "auth_error.txt");
+        FilePath errorFile = workspace.child("auth_error.txt");
 
-        try (PrintStream errorStream = new PrintStream(errorFile, StandardCharsets.UTF_8)) {
+        try (PrintStream errorStream = new PrintStream(
+                errorFile.write(),
+                true,
+                StandardCharsets.UTF_8)) {
 
             int result = launcher.launch()
                     .cmds(authArgs)
@@ -71,12 +72,12 @@ public class WizCliAuthenticator {
     /**
      * Extracts a clean error message from the error file, removing ASCII art and formatting
      */
-    private static String getCleanErrorMessage(File errorFile) throws IOException {
+    private static String getCleanErrorMessage(FilePath errorFile) throws IOException, InterruptedException {
         if (!errorFile.exists() || errorFile.length() == 0) {
             return "Authentication failed";
         }
 
-        String errorContent = Files.readString(errorFile.toPath());
+        String errorContent = errorFile.readToString();
 
         // Find the actual error message
         int errorIndex = errorContent.indexOf("ERROR:");
@@ -91,10 +92,13 @@ public class WizCliAuthenticator {
         return "Authentication failed: " + errorContent.trim();
     }
 
-    private static void cleanupErrorFile(File errorFile) {
-        if (errorFile.exists() && !errorFile.delete()) {
-            LOGGER.log(Level.WARNING, "Failed to delete temporary error file: {0}",
-                    errorFile.getAbsolutePath());
+    private static void cleanupErrorFile(FilePath errorFile) {
+        try {
+            if (errorFile.exists()) {
+                errorFile.delete();
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Failed to delete temporary error file: " + errorFile.getRemote(), e);
         }
     }
 
