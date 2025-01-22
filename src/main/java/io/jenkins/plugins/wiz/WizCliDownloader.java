@@ -15,7 +15,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -124,14 +123,18 @@ public class WizCliDownloader {
     private static void downloadFile(String fileURL, FilePath targetPath) throws IOException {
         URL url = new URL(fileURL);
         HttpURLConnection conn = null;
-
         InputStream inputStream = null;
         OutputStream outputStream = null;
 
         try {
             ProxyConfiguration proxyConfig = Jenkins.get().getProxy();
-            conn = (HttpURLConnection) (proxyConfig != null ?
-            url.openConnection(proxyConfig.createProxy(url.getHost())) : url.openConnection());
+            try {
+                conn = (HttpURLConnection) (proxyConfig != null ?
+                        url.openConnection(proxyConfig.createProxy(url.getHost())) : url.openConnection());
+            } catch (IllegalArgumentException e) {
+                throw new IOException("Invalid proxy configuration", e);
+            }
+
             conn.setConnectTimeout(CONNECT_TIMEOUT);
             conn.setReadTimeout(DOWNLOAD_TIMEOUT);
 
@@ -139,12 +142,26 @@ public class WizCliDownloader {
             if (responseCode != HttpURLConnection.HTTP_OK) {
                 throw new IOException("Download failed with HTTP code: " + responseCode);
             }
-            Objects.requireNonNull(targetPath.getParent()).mkdirs();
+
+            FilePath parent = targetPath.getParent();
+            if (parent == null) {
+                throw new IOException("Invalid target path: parent directory is null");
+            }
+            try {
+                parent.mkdirs();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("Directory creation was interrupted", e);
+            }
+
             inputStream = conn.getInputStream();
-            outputStream = targetPath.write();
-            IOUtils.copy(inputStream, outputStream);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            try {
+                outputStream = targetPath.write();
+                IOUtils.copy(inputStream, outputStream);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("File download was interrupted", e);
+            }
         } finally {
             if (inputStream != null) inputStream.close();
             if (outputStream != null) outputStream.close();
