@@ -145,9 +145,14 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
             Run<?, ?> build, int exitCode, FilePath workspace, TaskListener listener, ArtifactInfo artifactInfo)
             throws IOException {
 
-        File resultFile = new File(workspace.getRemote(), artifactInfo.name);
-        if (resultFile.exists() && resultFile.length() > 0) {
-            build.addAction(new WizScannerAction(build, workspace, artifactInfo.suffix, artifactInfo.name));
+        FilePath resultFile = workspace.child(artifactInfo.name);
+        try {
+            if (resultFile.exists() && resultFile.length() > 0) {
+                build.addAction(new WizScannerAction(build, workspace, artifactInfo.suffix, artifactInfo.name));
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted while checking results file", e);
         }
 
         try {

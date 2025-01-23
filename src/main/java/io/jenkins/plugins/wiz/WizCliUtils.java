@@ -3,8 +3,9 @@ package io.jenkins.plugins.wiz;
 import hudson.FilePath;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -35,13 +36,20 @@ public class WizCliUtils {
     public static void cleanupArtifacts(Run<?, ?> build, FilePath workspace, TaskListener listener, String artifactName)
             throws InterruptedException {
 
-        FilePath[] filesToClean = {
-            new FilePath(new File(build.getRootDir(), "wizcli_output")),
-            new FilePath(new File(build.getRootDir(), "wizcli_err_output")),
-            workspace.child(artifactName),
-            workspace.child(WizCliSetup.WIZCLI_UNIX_PATH),
-            workspace.child(WizCliSetup.WIZCLI_WINDOWS_PATH)
-        };
+        List<FilePath> filesToClean = new ArrayList<>();
+
+        try {
+            FilePath buildDir = new FilePath(build.getRootDir());
+            filesToClean.add(buildDir.child("wizcli_output"));
+            filesToClean.add(buildDir.child("wizcli_err_output"));
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Failed to access build directory", e);
+            listener.getLogger().println("Warning: Failed to access build directory");
+        }
+
+        filesToClean.add(workspace.child(artifactName));
+        filesToClean.add(workspace.child(WizCliSetup.WIZCLI_UNIX_PATH));
+        filesToClean.add(workspace.child(WizCliSetup.WIZCLI_WINDOWS_PATH));
 
         listener.getLogger().println("Cleaning up temporary files...");
 

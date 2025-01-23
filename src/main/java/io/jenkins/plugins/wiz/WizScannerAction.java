@@ -2,7 +2,7 @@ package io.jenkins.plugins.wiz;
 
 import hudson.FilePath;
 import hudson.model.Run;
-import java.io.File;
+
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -14,14 +14,13 @@ import jenkins.model.RunAction2;
  */
 public class WizScannerAction implements RunAction2 {
     private static final Logger LOGGER = Logger.getLogger(WizScannerAction.class.getName());
-    private static final String DEFAULT_ICON = "plugin/wiz-scanner/images/wiz.png";
+    private static final String DEFAULT_ICON = "symbol-wiz plugin-wiz-scanner";
     private static final String BASE_URL_NAME = "wiz-results";
     private static final String DEFAULT_DISPLAY_NAME = "Wiz Scanner";
 
     private transient Run<?, ?> run;
     private final WizScannerResult scanDetails;
     private final String name;
-    private final Run<?, ?> build;
     private final String artifactSuffix;
 
     /**
@@ -36,12 +35,13 @@ public class WizScannerAction implements RunAction2 {
         WizInputValidator.validateScanAction(build, workspace, artifactName);
 
         this.name = artifactSuffix;
-        this.build = build;
         this.artifactSuffix = artifactSuffix;
+        this.run = build;
 
         WizScannerResult loadedDetails = null;
         try {
-            loadedDetails = loadScanDetails(new File(workspace.getRemote(), artifactName));
+            FilePath resultsFile = workspace.child(artifactName);
+            loadedDetails = loadScanDetails(resultsFile);
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to load scan details", e);
         }
@@ -54,17 +54,14 @@ public class WizScannerAction implements RunAction2 {
      * @return The parsed WizScannerResult
      * @throws IOException if the file cannot be read
      */
-    private WizScannerResult loadScanDetails(File jsonFile) throws IOException {
+    private WizScannerResult loadScanDetails(FilePath jsonFile) throws IOException, InterruptedException {
         if (!jsonFile.exists()) {
-            throw new IOException("Results file does not exist: " + jsonFile.getPath());
-        }
-        if (!jsonFile.canRead()) {
-            throw new IOException("Cannot read results file: " + jsonFile.getPath());
+            throw new IOException("Results file does not exist: " + jsonFile.getRemote());
         }
 
         WizScannerResult result = WizScannerResult.fromJsonFile(jsonFile);
         if (result == null) {
-            throw new IOException("Failed to parse scan results from: " + jsonFile.getPath());
+            throw new IOException("Failed to parse scan results from: " + jsonFile.getRemote());
         }
         return result;
     }
@@ -103,10 +100,6 @@ public class WizScannerAction implements RunAction2 {
 
     public String getName() {
         return name;
-    }
-
-    public Run<?, ?> getBuild() {
-        return build;
     }
 
     @SuppressWarnings("unused")
