@@ -77,7 +77,7 @@ public class PGPVerifier {
             pgpSignature.update(signedData);
 
             boolean result = pgpSignature.verify();
-            LOGGER.log(Level.INFO, "Signature verification result: {0}", result);
+            LOGGER.log(Level.FINE, "Signature verification result: {0}", result);
 
             return result;
         } catch (Exception e) {
@@ -173,7 +173,7 @@ public class PGPVerifier {
         LOGGER.log(Level.FINE, "Key flags: {0}", keyFlags);
 
         if (!key.isMasterKey() && (keyFlags & PGPKeyFlags.CAN_SIGN) != 0) {
-            LOGGER.log(Level.INFO, "Found suitable signing key");
+            LOGGER.log(Level.FINE, "Found suitable signing key");
             return true;
         }
 

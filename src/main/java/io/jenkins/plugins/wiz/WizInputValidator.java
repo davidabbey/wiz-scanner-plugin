@@ -7,7 +7,7 @@ import hudson.util.Secret;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Validator for Wiz CLI inputs and commands.

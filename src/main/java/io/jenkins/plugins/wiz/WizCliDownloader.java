@@ -5,7 +5,9 @@ import hudson.FilePath;
 import hudson.ProxyConfiguration;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.SystemUtils;
+import jenkins.security.MasterToSlaveCallable;
+
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -32,17 +34,23 @@ public class WizCliDownloader {
      * Sets up the Wiz CLI by downloading and verifying the binary.
      */
     public static WizCliSetup setupWizCli(FilePath workspace, String wizCliURL, TaskListener listener) throws IOException {
-
         try {
-            // Validate CLI URL format before proceeding
             WizInputValidator.validateWizCliUrl(wizCliURL);
 
-            // Detect OS and architecture
-            boolean isWindows = SystemUtils.IS_OS_WINDOWS;
-            boolean isMac = SystemUtils.IS_OS_MAC || SystemUtils.IS_OS_MAC_OSX;
-            String arch = SystemUtils.OS_ARCH;
+            // Detect OS and architecture on the agent
+            String[] osDetails = workspace.act(new MasterToSlaveCallable<String[], IOException>() {
+                @Override
+                public String[] call() {
+                    boolean isWindows = SystemUtils.IS_OS_WINDOWS;
+                    return new String[]{
+                            String.valueOf(isWindows),
+                    };
+                }
+            });
+
+            boolean isWindows = Boolean.parseBoolean(osDetails[0]);
+
             String cliFileName = isWindows ? WizCliSetup.WIZCLI_WINDOWS_PATH : WizCliSetup.WIZCLI_UNIX_PATH;
-            String osName = SystemUtils.OS_NAME;
             FilePath cliPath = workspace.child(cliFileName);
 
             downloadAndVerifyWizCli(wizCliURL, cliPath, workspace, listener);
@@ -51,7 +59,7 @@ public class WizCliDownloader {
                 cliPath.chmod(0755);
             }
 
-            return new WizCliSetup(cliPath.getRemote(), isWindows, isMac, osName, arch);
+            return new WizCliSetup(isWindows);
 
         } catch (AbortException e) {
             listener.error("Invalid Wiz CLI URL format: " + e.getMessage());
@@ -89,7 +97,7 @@ public class WizCliDownloader {
 
                 // Verify signature and checksum
                 verifySignatureAndChecksum(
-                        listener, cliPath, sha256File, signatureFile, publicKeyFile);
+                        listener, cliPath, sha256File, signatureFile, publicKeyFile, workspace);
 
             } finally {
                 // Clean up verification files
@@ -170,11 +178,12 @@ public class WizCliDownloader {
     }
 
     private static void verifySignatureAndChecksum(
-            TaskListener listener, FilePath cliPath, FilePath sha256File, FilePath signaturePath, FilePath publicKeyPath)
+            TaskListener listener, FilePath cliPath, FilePath sha256File, FilePath signaturePath, FilePath publicKeyPath, FilePath workspace)
             throws IOException {
         try {
-            PGPVerifier verifier = new PGPVerifier();
-            boolean verified = verifier.verifySignatureFromFiles(sha256File.getRemote(), signaturePath.getRemote(), publicKeyPath.getRemote());
+            boolean verified = workspace.act(
+                    new VerifySignatureCallable(sha256File, signaturePath, publicKeyPath)
+            );
 
             if (!verified) {
                 throw new IOException("GPG signature verification failed");
@@ -182,7 +191,6 @@ public class WizCliDownloader {
 
             // Continue with checksum verification
             verifyChecksum(cliPath, sha256File);
-
             listener.getLogger().println("Successfully verified Wiz CLI signature and checksum");
         } catch (Exception e) {
             throw new IOException("GPG signature verification failed: " + e.getMessage(), e);
@@ -217,7 +225,6 @@ public class WizCliDownloader {
         }
     }
 
-
     private static void cleanupVerificationFiles(FilePath workspace, TaskListener listener) {
         FilePath[] filesToClean = {
             workspace.child("wizcli-sha256"), workspace.child("wizcli-sha256.sig"), workspace.child("public_key.asc")
@@ -235,4 +242,31 @@ public class WizCliDownloader {
             }
         }
     }
+
+    private static class VerifySignatureCallable extends MasterToSlaveCallable<Boolean, IOException> {
+        private final FilePath sha256File;
+        private final FilePath signaturePath;
+        private final FilePath publicKeyPath;
+
+        public VerifySignatureCallable(FilePath sha256File, FilePath signaturePath, FilePath publicKeyPath) {
+            this.sha256File = sha256File;
+            this.signaturePath = signaturePath;
+            this.publicKeyPath = publicKeyPath;
+        }
+
+        @Override
+        public Boolean call() throws IOException {
+            try {
+                PGPVerifier verifier = new PGPVerifier();
+                return verifier.verifySignatureFromFiles(
+                        sha256File.getRemote(),
+                        signaturePath.getRemote(),
+                        publicKeyPath.getRemote()
+                );
+            } catch (PGPVerifier.PGPVerificationException e) {
+                throw new IOException("PGP verification failed", e);
+            }
+        }
+    }
+
 }

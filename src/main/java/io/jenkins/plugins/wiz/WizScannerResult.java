@@ -12,7 +12,7 @@ import java.util.logging.Logger;
 import hudson.FilePath;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Represents the results of a Wiz security scan.
