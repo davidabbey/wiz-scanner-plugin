@@ -15,11 +15,18 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
+/**
+ * Main executor class for Wiz CLI operations. Handles command building, execution,
+ * and output processing in a structured way.
+ */
 public class WizCliRunner {
     private static final Logger LOGGER = Logger.getLogger(WizCliRunner.class.getName());
     private static final String OUTPUT_FILENAME = "wizcli_output";
     private static final String ERROR_FILENAME = "wizcli_err_output";
 
+    /**
+     * Execute a complete Wiz CLI workflow including setup, authentication, and scanning.
+     */
     public static int execute(
             FilePath workspace,
             EnvVars env,
