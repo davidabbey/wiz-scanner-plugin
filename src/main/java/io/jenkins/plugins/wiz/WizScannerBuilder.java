@@ -1,5 +1,6 @@
 package io.jenkins.plugins.wiz;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -12,16 +13,13 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
-import hudson.security.Permission;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.tasks.SimpleBuildStep;
-import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import org.jetbrains.annotations.NotNull;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -165,7 +163,7 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
             throw new AbortException("Wiz scanning failed with exit code: " + exitCode);
         }
 
-        LOGGER.log(Level.INFO, "Wiz scan completed successfully");
+        LOGGER.log(Level.FINE, "Wiz scan completed successfully");
     }
 
     @Override
@@ -182,9 +180,8 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
         private String wizEnv;
 
         @RequirePOST
+        @SuppressFBWarnings(value = "SECURITY")
         public FormValidation doCheckUserInput(@QueryParameter String value) {
-            Jenkins.get().checkPermission(Permission.CONFIGURE);
-
             if (StringUtils.isBlank(value)) {
                 return FormValidation.error(Messages.WizScannerBuilder_DescriptorImpl_errors_missingName());
             }
