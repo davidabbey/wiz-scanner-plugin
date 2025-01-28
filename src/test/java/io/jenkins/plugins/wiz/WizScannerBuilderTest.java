@@ -1,11 +1,9 @@
-
-
-
 package io.jenkins.plugins.wiz;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
+import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -99,7 +97,7 @@ public class WizScannerBuilderTest {
         assertFalse("Log should contain output", logOutput.toString().isEmpty());
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void testPerformFailureInvalidConfig() throws Exception {
         // Setup with invalid config
         WizScannerBuilder.DescriptorImpl descriptor = j.jenkins.getDescriptorByType(WizScannerBuilder.DescriptorImpl.class);
@@ -115,8 +113,12 @@ public class WizScannerBuilderTest {
                         "}"
         ));
 
-        // Should throw exception
-        builder.perform(run, workspace, env, mockLauncher, listener);
+        try {
+            builder.perform(run, workspace, env, mockLauncher, listener);
+            fail("Expected AbortException to be thrown");
+        } catch (AbortException e) {
+            assertEquals("Wiz Client ID is required", e.getMessage());
+        }
     }
 
     @Test

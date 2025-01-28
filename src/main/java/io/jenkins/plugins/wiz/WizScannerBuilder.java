@@ -111,7 +111,6 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
 
             // Execute scan
             int exitCode = WizCliRunner.execute(
-                    build,
                     workspace,
                     envVars,
                     launcher,

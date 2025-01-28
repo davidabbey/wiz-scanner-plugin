@@ -8,7 +8,6 @@ import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -138,7 +137,8 @@ public class WizCliDownloader {
             ProxyConfiguration proxyConfig = Jenkins.get().getProxy();
             try {
                 conn = (HttpURLConnection) (proxyConfig != null ?
-                        url.openConnection(proxyConfig.createProxy(url.getHost())) : url.openConnection());
+                        url.openConnection(proxyConfig.createProxy(url.getHost())) :
+                        url.openConnection());
             } catch (IllegalArgumentException e) {
                 throw new IOException("Invalid proxy configuration", e);
             }
@@ -155,6 +155,7 @@ public class WizCliDownloader {
             if (parent == null) {
                 throw new IOException("Invalid target path: parent directory is null");
             }
+
             try {
                 parent.mkdirs();
             } catch (InterruptedException e) {
@@ -165,15 +166,33 @@ public class WizCliDownloader {
             inputStream = conn.getInputStream();
             try {
                 outputStream = targetPath.write();
-                IOUtils.copy(inputStream, outputStream);
+                byte[] buffer = new byte[8192]; // 8KB buffer
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new IOException("File download was interrupted", e);
             }
         } finally {
-            if (inputStream != null) inputStream.close();
-            if (outputStream != null) outputStream.close();
-            if (conn != null) conn.disconnect();
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    LOGGER.log(Level.WARNING, "Error closing input stream", e);
+                }
+            }
+            if (outputStream != null) {
+                try {
+                    outputStream.close();
+                } catch (IOException e) {
+                    LOGGER.log(Level.WARNING, "Error closing output stream", e);
+                }
+            }
+            if (conn != null) {
+                conn.disconnect();
+            }
         }
     }
 
@@ -202,26 +221,36 @@ public class WizCliDownloader {
         String actualHash = calculateSHA256(cliPath);
 
         if (!expectedHash.equals(actualHash)) {
-            throw new IOException("SHA256 checksum verification failed");
+            throw new IOException("SHA256 checksum verification failed. Expected: " + expectedHash + ", Actual: " + actualHash);
         }
     }
 
     private static String calculateSHA256(FilePath filePath) throws IOException {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] fileBytes = IOUtils.toByteArray(filePath.read());
-            byte[] hash = digest.digest(fileBytes);
+            byte[] buffer = new byte[8192]; // 8KB buffer size
+            int bytesRead;
+
+            try (InputStream inputStream = filePath.read()) {
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    digest.update(buffer, 0, bytesRead);
+                }
+            }
+
+            byte[] hash = digest.digest();
             StringBuilder hexString = new StringBuilder();
 
             for (byte b : hash) {
                 String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
                 hexString.append(hex);
             }
 
             return hexString.toString();
         } catch (Exception e) {
-            throw new IOException("Failed to calculate SHA256: " + e.getMessage());
+            throw new IOException("Failed to calculate SHA256: " + e.getMessage(), e);
         }
     }
 

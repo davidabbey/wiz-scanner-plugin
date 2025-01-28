@@ -5,16 +5,11 @@ import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Launcher.ProcStarter;
-import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.Secret;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -33,7 +28,6 @@ public class WizCliRunner {
      * Execute a complete Wiz CLI workflow including setup, authentication, and scanning.
      */
     public static int execute(
-            Run<?, ?> build,
             FilePath workspace,
             EnvVars env,
             Launcher launcher,
@@ -65,7 +59,7 @@ public class WizCliRunner {
             );
 
             // Execute scan
-            return executeScan(build, workspace, env, launcher, listener, userInput, artifactName, cliSetup);
+            return executeScan(workspace, env, launcher, listener, userInput, artifactName, cliSetup);
 
         } catch (Exception e) {
             throw new AbortException("Error executing Wiz CLI: " + e.getMessage());
@@ -96,7 +90,6 @@ public class WizCliRunner {
      * Executes the actual scan command after setup and authentication are complete.
      */
     private static int executeScan(
-            Run<?, ?> build,
             FilePath workspace,
             EnvVars env,
             Launcher launcher,
@@ -116,20 +109,17 @@ public class WizCliRunner {
             return -1;
         }
 
-        File outputFile = new File(build.getRootDir(), OUTPUT_FILENAME);
-        File errorFile = new File(build.getRootDir(), ERROR_FILENAME);
+        FilePath outputFile = workspace.child(OUTPUT_FILENAME);
+        FilePath errorFile = workspace.child(ERROR_FILENAME);
 
         ArgumentListBuilder scanArgs = buildScanArguments(userInput, cliSetup);
         listener.getLogger().println("Executing command: " + scanArgs);
 
         int exitCode = executeScanProcess(launcher, workspace, env, scanArgs, outputFile, errorFile);
 
-        if (exitCode != 0) {
-            // Print error file content to console if scan failed
-            if (errorFile.exists() && errorFile.length() > 0) {
-                listener.error("Scan failed with error output:");
-                listener.getLogger().println(Files.readString(errorFile.toPath()));
-            }
+        if (exitCode != 0 && errorFile.exists()) {
+            listener.error("Scan failed with error output:");
+            listener.getLogger().println(errorFile.readToString());
         }
 
         copyOutputToArtifact(outputFile, workspace, artifactName);
@@ -177,36 +167,25 @@ public class WizCliRunner {
             FilePath workspace,
             EnvVars env,
             ArgumentListBuilder args,
-            File outputFile,
-            File errorFile) throws IOException, InterruptedException {
+            FilePath outputFile,
+            FilePath errorFile) throws IOException, InterruptedException {
 
-        PrintStream outputStream = null;
-        PrintStream errorStream = null;
+        ProcStarter proc = launcher.launch()
+                .cmds(args)
+                .pwd(workspace)
+                .envs(env)
+                .stdout(outputFile.write())
+                .stderr(errorFile.write());
 
-        try {
-            outputStream = new PrintStream(outputFile, StandardCharsets.UTF_8);
-            errorStream = new PrintStream(errorFile, StandardCharsets.UTF_8);
-
-            ProcStarter proc = launcher.launch()
-                    .cmds(args)
-                    .pwd(workspace)
-                    .envs(env)
-                    .stdout(outputStream)
-                    .stderr(errorStream);
-
-            return proc.join();
-        } finally {
-            WizCliUtils.closeQuietly(outputStream, errorStream);
-        }
+        return proc.join();
     }
 
     /**
      * Copies the scan output to an artifact file in the workspace.
      */
-    private static void copyOutputToArtifact(File outputFile, FilePath workspace, String artifactName)
+    private static void copyOutputToArtifact(FilePath outputFile, FilePath workspace, String artifactName)
             throws IOException, InterruptedException {
-        FilePath source = new FilePath(outputFile);
-        FilePath target = new FilePath(workspace, artifactName);
-        source.copyTo(target);
+        FilePath target = workspace.child(artifactName);
+        outputFile.copyTo(target);
     }
 }

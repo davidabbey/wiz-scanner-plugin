@@ -9,8 +9,7 @@ import hudson.util.ArgumentListBuilder;
 import hudson.util.Secret;
 
 import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
+import java.io.OutputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -19,10 +18,10 @@ import java.util.logging.Logger;
  */
 public class WizCliAuthenticator {
     private static final Logger LOGGER = Logger.getLogger(WizCliAuthenticator.class.getName());
+    private static final String ERROR_FILE_NAME = "auth_error.txt";
 
     /**
      * Authenticates with the Wiz API using provided credentials.
-     *
      */
     public static void authenticate(
             Launcher launcher,
@@ -42,12 +41,11 @@ public class WizCliAuthenticator {
         authArgs.add("--secret");
         authArgs.addMasked(wizSecretKey.getPlainText());
 
-        FilePath errorFile = workspace.child("auth_error.txt");
+        FilePath errorFile = workspace.child(ERROR_FILE_NAME);
+        OutputStream errorStream = null;
 
-        try (PrintStream errorStream = new PrintStream(
-                errorFile.write(),
-                true,
-                StandardCharsets.UTF_8)) {
+        try {
+            errorStream = errorFile.write();
 
             int result = launcher.launch()
                     .cmds(authArgs)
@@ -64,8 +62,14 @@ public class WizCliAuthenticator {
                 throw new AbortException(errorMessage);
             }
         } finally {
+            try {
+                if (errorStream != null) {
+                    errorStream.close();
+                }
+            } catch (IOException e) {
+                LOGGER.log(Level.WARNING, "Failed to close error stream", e);
+            }
             cleanupErrorFile(errorFile);
-
         }
     }
 
@@ -88,22 +92,23 @@ public class WizCliAuthenticator {
             return errorMessage;
         }
 
-        // If no specific error found, return a generic message
+        // If no specific error found, return a generic message with the content
         return "Authentication failed: " + errorContent.trim();
     }
 
     private static void cleanupErrorFile(FilePath errorFile) {
         try {
-            if (errorFile.exists()) {
+            if (errorFile != null && errorFile.exists()) {
                 errorFile.delete();
+                LOGGER.log(Level.FINE, "Successfully deleted error file: {0}", errorFile.getRemote());
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Failed to delete temporary error file: " + errorFile.getRemote(), e);
+            LOGGER.log(Level.WARNING, "Failed to delete error file: " + errorFile.getRemote(), e);
         }
     }
 
     /**
-     * Logs out from the Wiz CLI
+     * Logs out from the Wiz CLI.
      */
     public static int logout(
             Launcher launcher,
@@ -117,13 +122,15 @@ public class WizCliAuthenticator {
         args.add("auth");
         args.add("--logout");
 
-        Launcher.ProcStarter procStarter = launcher.launch()
+        int exitCode = launcher.launch()
                 .cmds(args)
                 .envs(env)
                 .pwd(workspace)
-                .stdout(listener);
+                .stdout(listener.getLogger())
+                .stderr(listener.getLogger())
+                .quiet(false)
+                .join();
 
-        int exitCode = procStarter.join();
         if (exitCode == 0) {
             listener.getLogger().println("Successfully logged out from Wiz CLI");
         } else {
