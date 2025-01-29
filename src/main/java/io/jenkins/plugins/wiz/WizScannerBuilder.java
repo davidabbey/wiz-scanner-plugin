@@ -1,6 +1,8 @@
 package io.jenkins.plugins.wiz;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -21,7 +23,6 @@ import jenkins.tasks.SimpleBuildStep;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
-import org.jetbrains.annotations.NotNull;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -83,11 +84,11 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
 
     @Override
     public void perform(
-            @NotNull Run<?, ?> build,
-            @NotNull FilePath workspace,
-            @NotNull EnvVars env,
-            @NotNull Launcher launcher,
-            @NotNull TaskListener listener)
+            @NonNull Run<?, ?> build,
+            @NonNull FilePath workspace,
+            @NonNull EnvVars env,
+            @NonNull Launcher launcher,
+            @NonNull TaskListener listener)
             throws InterruptedException, IOException {
         try {
             LOGGER.log(Level.FINE, "Starting Wiz Scanner build step for build {0}", build.getDisplayName());
@@ -193,7 +194,7 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
         }
 
         @Override
-        public @NotNull String getDisplayName() {
+        public @NonNull String getDisplayName() {
             return Messages.WizScannerBuilder_DescriptorImpl_DisplayName();
         }
 
