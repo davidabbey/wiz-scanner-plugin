@@ -16,11 +16,8 @@ import hudson.util.Secret;
 import hudson.util.StreamTaskListener;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -93,24 +90,33 @@ public class WizScannerBuilderTest {
                         + "}"));
 
         FilePath resultFile = workspace.child("wizscan.json");
-        resultFile.write("{}", "UTF-8");
-
         try {
+            resultFile.write("{}", "UTF-8");
             builder.perform(run, workspace, env, mockLauncher, listener);
 
             assertEquals("test", env.get("WIZ_ENV"));
             assertFalse("Log should contain output", logOutput.toString().isEmpty());
         } finally {
-            // Close file handles explicitly
+            // Make sure we close streams first
             if (logOutput != null) {
-                logOutput.close();
+                try {
+                    logOutput.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
 
-            // Wait a bit for Windows to release file handles
-            Thread.sleep(100);
+            // Force garbage collection to release file handles
+            System.gc();
+            Thread.sleep(100); // Give Windows time to release handles
 
-            // Clean up files
-            cleanupTestFiles(run, workspace);
+            // try to clean up files
+            try {
+                cleanupTestFiles(run, workspace);
+            } catch (Exception e) {
+                // Log but don't fail the test
+                e.printStackTrace();
+            }
         }
     }
 
@@ -163,31 +169,25 @@ public class WizScannerBuilderTest {
         assertTrue("Should be applicable to FreeStyleProject", descriptor.isApplicable(FreeStyleProject.class));
     }
 
-    private void cleanupTestFiles(Run<?, ?> run, FilePath workspace) throws IOException, InterruptedException {
-        // List of files to clean up
-        List<FilePath> filesToClean = Arrays.asList(
-                new FilePath(new File(run.getRootDir(), "wizcli_output")),
-                new FilePath(new File(run.getRootDir(), "wizcli_err_output")),
-                workspace.child("wizscan.json"),
-                workspace.child("wizcli"),
-                workspace.child("wizcli.exe"));
+    private void cleanupTestFiles(Run<?, ?> run, FilePath workspace) throws Exception {
+        String[] filePaths = {
+            new File(run.getRootDir(), "wizcli_output").getAbsolutePath(),
+            new File(run.getRootDir(), "wizcli_err_output").getAbsolutePath(),
+            workspace.child("wizscan.json").getRemote(),
+            workspace.child("wizcli").getRemote(),
+            workspace.child("wizcli.exe").getRemote()
+        };
 
-        // Try multiple times to delete files (Windows sometimes needs retries)
-        for (FilePath file : filesToClean) {
-            int attempts = 3;
-            while (attempts > 0) {
+        for (String path : filePaths) {
+            File file = new File(path);
+            if (file.exists()) {
                 try {
-                    if (file.exists()) {
-                        file.deleteRecursive();
+                    java.nio.file.Files.deleteIfExists(file.toPath());
+                } catch (Exception e) {
+                    // Fall back to traditional deletion
+                    if (!file.delete() && file.exists()) {
+                        file.deleteOnExit();
                     }
-                    break;
-                } catch (IOException e) {
-                    attempts--;
-                    if (attempts == 0) {
-                        // Log warning but don't fail test
-                        e.printStackTrace();
-                    }
-                    Thread.sleep(100);
                 }
             }
         }
