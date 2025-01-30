@@ -1,5 +1,6 @@
 package io.jenkins.plugins.wiz;
 
+import hudson.FilePath;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -8,8 +9,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import hudson.FilePath;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
 import org.apache.commons.lang3.StringUtils;
@@ -20,7 +19,8 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class WizScannerResult {
     private static final Logger LOGGER = Logger.getLogger(WizScannerResult.class.getName());
-    private static final DateTimeFormatter OUTPUT_FORMATTER = DateTimeFormatter.ofPattern("MMMM d, yyyy 'at' h:mm a", Locale.ENGLISH);
+    private static final DateTimeFormatter OUTPUT_FORMATTER =
+            DateTimeFormatter.ofPattern("MMMM d, yyyy 'at' h:mm a", Locale.ENGLISH);
     private static final DateTimeFormatter INPUT_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
 
     private String scannedResource;
@@ -353,11 +353,10 @@ public class WizScannerResult {
     private static void validateResult(WizScannerResult details) {
         if (details.getVulnerabilities().isPresent()
                 && !details.getVulnerabilities().get().isValid()) {
-            LOGGER.log(Level.WARNING,"Vulnerabilities data contains inconsistencies");
+            LOGGER.log(Level.WARNING, "Vulnerabilities data contains inconsistencies");
         }
-        if (details.getSecrets().isPresent()
-                && !details.getSecrets().get().isValid()) {
-            LOGGER.log(Level.WARNING,"Secrets data contain inconsistencies");
+        if (details.getSecrets().isPresent() && !details.getSecrets().get().isValid()) {
+            LOGGER.log(Level.WARNING, "Secrets data contain inconsistencies");
         }
     }
 
@@ -626,5 +625,3 @@ public class WizScannerResult {
         return getSecrets().map(Secrets::getInfoCount).orElse(0);
     }
 }
-
-

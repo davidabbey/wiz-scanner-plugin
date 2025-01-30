@@ -1,8 +1,7 @@
 package io.jenkins.plugins.wiz;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -15,7 +14,6 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
-
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -99,10 +97,7 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
 
             // Validate configuration
             WizInputValidator.validateConfiguration(
-                    descriptor.getWizClientId(),
-                    descriptor.getWizSecretKey(),
-                    descriptor.getWizCliURL()
-            );
+                    descriptor.getWizClientId(), descriptor.getWizSecretKey(), descriptor.getWizCliURL());
 
             // Set environment variables
             setupEnvironment(envVars, descriptor.getWizEnv());

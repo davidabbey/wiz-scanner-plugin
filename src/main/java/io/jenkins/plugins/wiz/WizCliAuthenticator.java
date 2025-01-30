@@ -7,7 +7,6 @@ import hudson.Launcher;
 import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.Secret;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.logging.Level;
@@ -111,11 +110,8 @@ public class WizCliAuthenticator {
      * Logs out from the Wiz CLI.
      */
     public static int logout(
-            Launcher launcher,
-            FilePath workspace,
-            EnvVars env,
-            TaskListener listener,
-            WizCliSetup cliSetup) throws IOException, InterruptedException {
+            Launcher launcher, FilePath workspace, EnvVars env, TaskListener listener, WizCliSetup cliSetup)
+            throws IOException, InterruptedException {
 
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add(cliSetup.getCliCommand());

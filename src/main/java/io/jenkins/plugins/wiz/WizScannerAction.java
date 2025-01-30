@@ -2,7 +2,6 @@ package io.jenkins.plugins.wiz;
 
 import hudson.FilePath;
 import hudson.model.Run;
-
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;

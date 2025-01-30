@@ -1,13 +1,5 @@
 package io.jenkins.plugins.wiz;
 
-import org.bouncycastle.bcpg.ArmoredInputStream;
-import org.bouncycastle.bcpg.BCPGInputStream;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openpgp.*;
-import org.bouncycastle.openpgp.jcajce.JcaPGPObjectFactory;
-import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
-import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
-
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -15,6 +7,13 @@ import java.security.Security;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.bouncycastle.bcpg.ArmoredInputStream;
+import org.bouncycastle.bcpg.BCPGInputStream;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openpgp.*;
+import org.bouncycastle.openpgp.jcajce.JcaPGPObjectFactory;
+import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
+import org.bouncycastle.openpgp.operator.bc.BcPGPContentVerifierBuilderProvider;
 
 /**
  * Provides PGP signature verification functionality using the BouncyCastle library.
@@ -70,8 +69,7 @@ public class PGPVerifier {
             PGPPublicKey pgpPublicKey = readPublicKey(new ByteArrayInputStream(publicKey));
             PGPSignature pgpSignature = readSignature(signature);
 
-            LOGGER.log(Level.FINE, "Verifying signature with key ID: {0}",
-                    Long.toHexString(pgpPublicKey.getKeyID()));
+            LOGGER.log(Level.FINE, "Verifying signature with key ID: {0}", Long.toHexString(pgpPublicKey.getKeyID()));
 
             pgpSignature.init(new BcPGPContentVerifierBuilderProvider(), pgpPublicKey);
             pgpSignature.update(signedData);
@@ -110,8 +108,7 @@ public class PGPVerifier {
     /**
      * Finds a suitable signing key from the key ring collection.
      */
-    private PGPPublicKey findSigningKey(PGPPublicKeyRingCollection pgpRings)
-            throws PGPVerificationException {
+    private PGPPublicKey findSigningKey(PGPPublicKeyRingCollection pgpRings) throws PGPVerificationException {
         for (PGPPublicKeyRing keyRing : pgpRings) {
             PGPPublicKey signingKey = findSigningKeyInRing(keyRing);
             if (signingKey != null) {
@@ -126,8 +123,7 @@ public class PGPVerifier {
      */
     private PGPPublicKey findSigningKeyInRing(PGPPublicKeyRing keyRing) {
         PGPPublicKey masterKey = keyRing.getPublicKey();
-        LOGGER.log(Level.FINE, "Processing keyring with master key: {0}",
-                Long.toHexString(masterKey.getKeyID()));
+        LOGGER.log(Level.FINE, "Processing keyring with master key: {0}", Long.toHexString(masterKey.getKeyID()));
 
         Iterator<PGPPublicKey> keys = keyRing.getPublicKeys();
         while (keys.hasNext()) {
@@ -281,8 +277,7 @@ public class PGPVerifier {
     /**
      * Validates input data for signature verification.
      */
-    private void validateInput(byte[] signedData, byte[] signature, byte[] publicKey)
-            throws PGPVerificationException {
+    private void validateInput(byte[] signedData, byte[] signature, byte[] publicKey) throws PGPVerificationException {
         if (signedData == null || signedData.length == 0) {
             LOGGER.log(Level.SEVERE, "Signed data validation failed: data is null or empty");
             throw new PGPVerificationException("Signed data is null or empty");
@@ -309,15 +304,15 @@ public class PGPVerifier {
         try {
             byte[] content = Files.readAllBytes(Paths.get(path));
             if (content.length == 0) {
-                LOGGER.log(Level.SEVERE, "Empty {0} file: {1}", new Object[]{fileType, path});
+                LOGGER.log(Level.SEVERE, "Empty {0} file: {1}", new Object[] {fileType, path});
                 throw new IOException(fileType + " file is empty");
             }
-            LOGGER.log(Level.FINE, "Successfully read {0} file: {1}, size: {2} bytes",
-                    new Object[]{fileType, path, content.length});
+            LOGGER.log(Level.FINE, "Successfully read {0} file: {1}, size: {2} bytes", new Object[] {
+                fileType, path, content.length
+            });
             return content;
         } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "Failed to read {0} file {1}: {2}",
-                    new Object[]{fileType, path, e.getMessage()});
+            LOGGER.log(Level.SEVERE, "Failed to read {0} file {1}: {2}", new Object[] {fileType, path, e.getMessage()});
             throw new IOException("Failed to read " + fileType + " file: " + path, e);
         }
     }
