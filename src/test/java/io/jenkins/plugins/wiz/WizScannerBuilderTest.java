@@ -15,8 +15,12 @@ import hudson.util.FormValidation;
 import hudson.util.Secret;
 import hudson.util.StreamTaskListener;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -73,7 +77,7 @@ public class WizScannerBuilderTest {
     }
 
     @Test
-   public void testPerformSuccessful() throws Exception {
+    public void testPerformSuccessful() throws Exception {
         WizScannerBuilder.DescriptorImpl descriptor =
                 j.jenkins.getDescriptorByType(WizScannerBuilder.DescriptorImpl.class);
         FreeStyleProject project = j.createFreeStyleProject();
@@ -97,18 +101,16 @@ public class WizScannerBuilderTest {
             assertEquals("test", env.get("WIZ_ENV"));
             assertFalse("Log should contain output", logOutput.toString().isEmpty());
         } finally {
-            // Use Jenkins' built-in cleanup mechanism
-            if (resultFile != null && resultFile.exists()) {
-                resultFile.act(new DeleteFileOnCloseAction());
+            // Close file handles explicitly
+            if (logOutput != null) {
+                logOutput.close();
             }
-            
-            // Clean up other files using FilePath's built-in methods
-            for (String file : Arrays.asList("wizcli_output", "wizcli_err_output")) {
-                FilePath f = new FilePath(new File(run.getRootDir(), file));
-                if (f.exists()) {
-                    f.act(new DeleteFileOnCloseAction());
-                }
-            }
+
+            // Wait a bit for Windows to release file handles
+            Thread.sleep(100);
+
+            // Clean up files
+            cleanupTestFiles(run, workspace);
         }
     }
 
@@ -161,13 +163,33 @@ public class WizScannerBuilderTest {
         assertTrue("Should be applicable to FreeStyleProject", descriptor.isApplicable(FreeStyleProject.class));
     }
 
-    private static final class DeleteFileOnCloseAction implements FileCallable<Void> {
-        private static final long serialVersionUID = 1L;
-        
-        @Override
-        public Void invoke(File f, VirtualChannel channel) throws IOException {
-            f.deleteOnExit();
-            return null;
+    private void cleanupTestFiles(Run<?, ?> run, FilePath workspace) throws IOException, InterruptedException {
+        // List of files to clean up
+        List<FilePath> filesToClean = Arrays.asList(
+                new FilePath(new File(run.getRootDir(), "wizcli_output")),
+                new FilePath(new File(run.getRootDir(), "wizcli_err_output")),
+                workspace.child("wizscan.json"),
+                workspace.child("wizcli"),
+                workspace.child("wizcli.exe"));
+
+        // Try multiple times to delete files (Windows sometimes needs retries)
+        for (FilePath file : filesToClean) {
+            int attempts = 3;
+            while (attempts > 0) {
+                try {
+                    if (file.exists()) {
+                        file.deleteRecursive();
+                    }
+                    break;
+                } catch (IOException e) {
+                    attempts--;
+                    if (attempts == 0) {
+                        // Log warning but don't fail test
+                        e.printStackTrace();
+                    }
+                    Thread.sleep(100);
+                }
+            }
         }
     }
 }
