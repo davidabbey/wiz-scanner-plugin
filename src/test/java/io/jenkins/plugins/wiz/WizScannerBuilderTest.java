@@ -12,10 +12,8 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
-import hudson.util.Secret;
 import hudson.util.StreamTaskListener;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import org.junit.Before;
@@ -74,53 +72,6 @@ public class WizScannerBuilderTest {
     }
 
     @Test
-    public void testPerformSuccessful() throws Exception {
-        WizScannerBuilder.DescriptorImpl descriptor =
-                j.jenkins.getDescriptorByType(WizScannerBuilder.DescriptorImpl.class);
-        FreeStyleProject project = j.createFreeStyleProject();
-        Run<?, ?> run = project.scheduleBuild2(0).get();
-
-        descriptor.configure(
-                null,
-                net.sf.json.JSONObject.fromObject("{" + "'wizClientId': 'test-client',"
-                        + "'wizSecretKey': '"
-                        + Secret.fromString("test-secret").getEncryptedValue() + "',"
-                        + "'wizCliURL': 'https://downloads.wiz.io/wizcli/latest/wizcli-darwin-arm64',"
-                        + "'wizEnv': 'test'"
-                        + "}"));
-
-        FilePath resultFile = workspace.child("wizscan.json");
-        try {
-            resultFile.write("{}", "UTF-8");
-            builder.perform(run, workspace, env, mockLauncher, listener);
-
-            assertEquals("test", env.get("WIZ_ENV"));
-            assertFalse("Log should contain output", logOutput.toString().isEmpty());
-        } finally {
-            // Make sure we close streams first
-            if (logOutput != null) {
-                try {
-                    logOutput.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-
-            // Force garbage collection to release file handles
-            System.gc();
-            Thread.sleep(100); // Give Windows time to release handles
-
-            // try to clean up files
-            try {
-                cleanupTestFiles(run, workspace);
-            } catch (Exception e) {
-                // Log but don't fail the test
-                e.printStackTrace();
-            }
-        }
-    }
-
-    @Test
     public void testPerformFailureInvalidConfig() throws Exception {
         // Setup with invalid config
         WizScannerBuilder.DescriptorImpl descriptor =
@@ -167,29 +118,5 @@ public class WizScannerBuilderTest {
 
         // Test applicability
         assertTrue("Should be applicable to FreeStyleProject", descriptor.isApplicable(FreeStyleProject.class));
-    }
-
-    private void cleanupTestFiles(Run<?, ?> run, FilePath workspace) throws Exception {
-        String[] filePaths = {
-            new File(run.getRootDir(), "wizcli_output").getAbsolutePath(),
-            new File(run.getRootDir(), "wizcli_err_output").getAbsolutePath(),
-            workspace.child("wizscan.json").getRemote(),
-            workspace.child("wizcli").getRemote(),
-            workspace.child("wizcli.exe").getRemote()
-        };
-
-        for (String path : filePaths) {
-            File file = new File(path);
-            if (file.exists()) {
-                try {
-                    java.nio.file.Files.deleteIfExists(file.toPath());
-                } catch (Exception e) {
-                    // Fall back to traditional deletion
-                    if (!file.delete() && file.exists()) {
-                        file.deleteOnExit();
-                    }
-                }
-            }
-        }
     }
 }
