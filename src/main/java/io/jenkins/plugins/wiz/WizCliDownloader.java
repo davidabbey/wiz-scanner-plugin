@@ -4,11 +4,6 @@ import hudson.AbortException;
 import hudson.FilePath;
 import hudson.ProxyConfiguration;
 import hudson.model.TaskListener;
-import jenkins.model.Jenkins;
-import jenkins.security.MasterToSlaveCallable;
-
-import org.apache.commons.lang3.SystemUtils;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -18,6 +13,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import jenkins.model.Jenkins;
+import jenkins.security.MasterToSlaveCallable;
+import org.apache.commons.lang3.SystemUtils;
 
 /**
  * Handles downloading and verifying the Wiz CLI binary.
@@ -28,11 +26,11 @@ public class WizCliDownloader {
     private static final int CONNECT_TIMEOUT = 10000; // 10 seconds
     private static final String PUBLIC_KEY_RESOURCE = "/io/jenkins/plugins/wiz/public_key.asc";
 
-
     /**
      * Sets up the Wiz CLI by downloading and verifying the binary.
      */
-    public static WizCliSetup setupWizCli(FilePath workspace, String wizCliURL, TaskListener listener) throws IOException {
+    public static WizCliSetup setupWizCli(FilePath workspace, String wizCliURL, TaskListener listener)
+            throws IOException {
         try {
             WizInputValidator.validateWizCliUrl(wizCliURL);
 
@@ -41,8 +39,8 @@ public class WizCliDownloader {
                 @Override
                 public String[] call() {
                     boolean isWindows = SystemUtils.IS_OS_WINDOWS;
-                    return new String[]{
-                            String.valueOf(isWindows),
+                    return new String[] {
+                        String.valueOf(isWindows),
                     };
                 }
             });
@@ -69,8 +67,7 @@ public class WizCliDownloader {
     }
 
     private static void downloadAndVerifyWizCli(
-            String wizCliURL, FilePath cliPath, FilePath workspace, TaskListener listener)
-            throws IOException {
+            String wizCliURL, FilePath cliPath, FilePath workspace, TaskListener listener) throws IOException {
         try {
             // Download CLI
             listener.getLogger().println("Downloading Wiz CLI from: " + wizCliURL);
@@ -95,8 +92,7 @@ public class WizCliDownloader {
                 extractPublicKey(publicKeyFile);
 
                 // Verify signature and checksum
-                verifySignatureAndChecksum(
-                        listener, cliPath, sha256File, signatureFile, publicKeyFile, workspace);
+                verifySignatureAndChecksum(listener, cliPath, sha256File, signatureFile, publicKeyFile, workspace);
 
             } finally {
                 // Clean up verification files
@@ -120,7 +116,7 @@ public class WizCliDownloader {
             // Write to workspace
             publicKeyFile.write(publicKey, StandardCharsets.UTF_8.name());
 
-            LOGGER.log(Level.FINE,"Public key extracted successfully");
+            LOGGER.log(Level.FINE, "Public key extracted successfully");
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to extract public key", e);
             throw new IOException("Failed to extract public key from resources", e);
@@ -136,9 +132,10 @@ public class WizCliDownloader {
         try {
             ProxyConfiguration proxyConfig = Jenkins.get().getProxy();
             try {
-                conn = (HttpURLConnection) (proxyConfig != null ?
-                        url.openConnection(proxyConfig.createProxy(url.getHost())) :
-                        url.openConnection());
+                conn = (HttpURLConnection)
+                        (proxyConfig != null
+                                ? url.openConnection(proxyConfig.createProxy(url.getHost()))
+                                : url.openConnection());
             } catch (IllegalArgumentException e) {
                 throw new IOException("Invalid proxy configuration", e);
             }
@@ -197,12 +194,15 @@ public class WizCliDownloader {
     }
 
     private static void verifySignatureAndChecksum(
-            TaskListener listener, FilePath cliPath, FilePath sha256File, FilePath signaturePath, FilePath publicKeyPath, FilePath workspace)
+            TaskListener listener,
+            FilePath cliPath,
+            FilePath sha256File,
+            FilePath signaturePath,
+            FilePath publicKeyPath,
+            FilePath workspace)
             throws IOException {
         try {
-            boolean verified = workspace.act(
-                    new VerifySignatureCallable(sha256File, signaturePath, publicKeyPath)
-            );
+            boolean verified = workspace.act(new VerifySignatureCallable(sha256File, signaturePath, publicKeyPath));
 
             if (!verified) {
                 throw new IOException("GPG signature verification failed");
@@ -221,7 +221,8 @@ public class WizCliDownloader {
         String actualHash = calculateSHA256(cliPath);
 
         if (!expectedHash.equals(actualHash)) {
-            throw new IOException("SHA256 checksum verification failed. Expected: " + expectedHash + ", Actual: " + actualHash);
+            throw new IOException(
+                    "SHA256 checksum verification failed. Expected: " + expectedHash + ", Actual: " + actualHash);
         }
     }
 
@@ -288,14 +289,10 @@ public class WizCliDownloader {
             try {
                 PGPVerifier verifier = new PGPVerifier();
                 return verifier.verifySignatureFromFiles(
-                        sha256File.getRemote(),
-                        signaturePath.getRemote(),
-                        publicKeyPath.getRemote()
-                );
+                        sha256File.getRemote(), signaturePath.getRemote(), publicKeyPath.getRemote());
             } catch (PGPVerifier.PGPVerificationException e) {
                 throw new IOException("PGP verification failed", e);
             }
         }
     }
-
 }

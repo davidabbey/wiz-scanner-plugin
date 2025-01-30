@@ -54,27 +54,27 @@
   </dependencyManagement>
   <dependencies>
     <dependency>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>commons-lang3-api</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcpg-jdk18on</artifactId>
       <version>1.78</version>
       <exclusions>
         <exclusion>
           <groupId>org.bouncycastle</groupId>
-          <artifactId>bcprov-jdk18on</artifactId>
+          <artifactId>bcpkix-jdk18on</artifactId>
         </exclusion>
         <exclusion>
           <groupId>org.bouncycastle</groupId>
-          <artifactId>bcpkix-jdk18on</artifactId>
+          <artifactId>bcprov-jdk18on</artifactId>
         </exclusion>
         <exclusion>
           <groupId>org.bouncycastle</groupId>
           <artifactId>bcutil-jdk18on</artifactId>
         </exclusion>
       </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>io.jenkins.plugins</groupId>
-      <artifactId>commons-lang3-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>

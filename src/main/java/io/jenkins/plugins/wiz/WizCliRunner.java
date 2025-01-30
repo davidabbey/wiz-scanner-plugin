@@ -8,12 +8,11 @@ import hudson.Launcher.ProcStarter;
 import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.Secret;
-
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Main executor class for Wiz CLI operations. Handles command building, execution,
@@ -36,27 +35,16 @@ public class WizCliRunner {
             String wizClientId,
             Secret wizSecretKey,
             String userInput,
-            String artifactName) throws IOException, InterruptedException {
+            String artifactName)
+            throws IOException, InterruptedException {
 
         WizCliSetup cliSetup = null;
         try {
             // Download and setup CLI
-             cliSetup = WizCliDownloader.setupWizCli(
-                    workspace,
-                    wizCliURL,
-                    listener
-            );
+            cliSetup = WizCliDownloader.setupWizCli(workspace, wizCliURL, listener);
 
             // Authenticate
-            WizCliAuthenticator.authenticate(
-                    launcher,
-                    workspace,
-                    env,
-                    wizClientId,
-                    wizSecretKey,
-                    listener,
-                    cliSetup
-            );
+            WizCliAuthenticator.authenticate(launcher, workspace, env, wizClientId, wizSecretKey, listener, cliSetup);
 
             // Execute scan
             return executeScan(workspace, env, launcher, listener, userInput, artifactName, cliSetup);
@@ -66,13 +54,7 @@ public class WizCliRunner {
         } finally {
             if (cliSetup != null) {
                 try {
-                    int logoutResult = WizCliAuthenticator.logout(
-                            launcher,
-                            workspace,
-                            env,
-                            listener,
-                            cliSetup
-                    );
+                    int logoutResult = WizCliAuthenticator.logout(launcher, workspace, env, listener, cliSetup);
 
                     if (logoutResult != 0) {
                         LOGGER.warning("Failed to logout from Wiz CLI. Exit code: " + logoutResult);
@@ -96,7 +78,8 @@ public class WizCliRunner {
             TaskListener listener,
             String userInput,
             String artifactName,
-            WizCliSetup cliSetup) throws IOException, InterruptedException {
+            WizCliSetup cliSetup)
+            throws IOException, InterruptedException {
 
         listener.getLogger().println("Executing Wiz scan...");
 
@@ -142,8 +125,7 @@ public class WizCliRunner {
             while (matcher.find()) {
                 String arg = matcher.group();
                 // Remove surrounding quotes if present
-                if ((arg.startsWith("\"") && arg.endsWith("\"")) ||
-                        (arg.startsWith("'") && arg.endsWith("'"))) {
+                if ((arg.startsWith("\"") && arg.endsWith("\"")) || (arg.startsWith("'") && arg.endsWith("'"))) {
                     arg = arg.substring(1, arg.length() - 1);
                 }
                 args.add(arg);
@@ -168,7 +150,8 @@ public class WizCliRunner {
             EnvVars env,
             ArgumentListBuilder args,
             FilePath outputFile,
-            FilePath errorFile) throws IOException, InterruptedException {
+            FilePath errorFile)
+            throws IOException, InterruptedException {
 
         ProcStarter proc = launcher.launch()
                 .cmds(args)

@@ -13,11 +13,10 @@ import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
+import hudson.util.StreamTaskListener;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-
-import hudson.util.StreamTaskListener;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -75,18 +74,19 @@ public class WizScannerBuilderTest {
 
     @Test
     public void testPerformSuccessful() throws Exception {
-        WizScannerBuilder.DescriptorImpl descriptor = j.jenkins.getDescriptorByType(WizScannerBuilder.DescriptorImpl.class);
+        WizScannerBuilder.DescriptorImpl descriptor =
+                j.jenkins.getDescriptorByType(WizScannerBuilder.DescriptorImpl.class);
         FreeStyleProject project = j.createFreeStyleProject();
-        Run<?,?> run = project.scheduleBuild2(0).get();
+        Run<?, ?> run = project.scheduleBuild2(0).get();
 
-        descriptor.configure(null, net.sf.json.JSONObject.fromObject(
-                "{" +
-                        "'wizClientId': 'test-client'," +
-                        "'wizSecretKey': '" + Secret.fromString("test-secret").getEncryptedValue() + "'," +
-                        "'wizCliURL': 'https://downloads.wiz.io/wizcli/latest/wizcli-darwin-arm64'," +
-                        "'wizEnv': 'test'" +
-                        "}"
-        ));
+        descriptor.configure(
+                null,
+                net.sf.json.JSONObject.fromObject("{" + "'wizClientId': 'test-client',"
+                        + "'wizSecretKey': '"
+                        + Secret.fromString("test-secret").getEncryptedValue() + "',"
+                        + "'wizCliURL': 'https://downloads.wiz.io/wizcli/latest/wizcli-darwin-arm64',"
+                        + "'wizEnv': 'test'"
+                        + "}"));
 
         FilePath resultFile = workspace.child("wizscan.json");
         resultFile.write("{}", "UTF-8");
@@ -100,18 +100,18 @@ public class WizScannerBuilderTest {
     @Test
     public void testPerformFailureInvalidConfig() throws Exception {
         // Setup with invalid config
-        WizScannerBuilder.DescriptorImpl descriptor = j.jenkins.getDescriptorByType(WizScannerBuilder.DescriptorImpl.class);
+        WizScannerBuilder.DescriptorImpl descriptor =
+                j.jenkins.getDescriptorByType(WizScannerBuilder.DescriptorImpl.class);
         FreeStyleProject project = j.createFreeStyleProject();
-        Run<?,?> run = project.scheduleBuild2(0).get();
+        Run<?, ?> run = project.scheduleBuild2(0).get();
 
-        descriptor.configure(null, net.sf.json.JSONObject.fromObject(
-                "{" +
-                        "'wizClientId': ''," +
-                        "'wizSecretKey': ''," +
-                        "'wizCliURL': ''," +
-                        "'wizEnv': ''" +
-                        "}"
-        ));
+        descriptor.configure(
+                null,
+                net.sf.json.JSONObject.fromObject("{" + "'wizClientId': '',"
+                        + "'wizSecretKey': '',"
+                        + "'wizCliURL': '',"
+                        + "'wizEnv': ''"
+                        + "}"));
 
         try {
             builder.perform(run, workspace, env, mockLauncher, listener);
@@ -126,14 +126,13 @@ public class WizScannerBuilderTest {
         WizScannerBuilder.DescriptorImpl descriptor = new WizScannerBuilder.DescriptorImpl();
 
         // Test empty input
-        assertEquals("Error message for empty input",
+        assertEquals(
+                "Error message for empty input",
                 Messages.WizScannerBuilder_DescriptorImpl_errors_missingName(),
                 descriptor.doCheckUserInput("").getMessage());
 
         // Test valid input
-        assertEquals("OK for valid input",
-                FormValidation.Kind.OK,
-                descriptor.doCheckUserInput(TEST_COMMAND).kind);
+        assertEquals("OK for valid input", FormValidation.Kind.OK, descriptor.doCheckUserInput(TEST_COMMAND).kind);
     }
 
     @Test
@@ -141,11 +140,9 @@ public class WizScannerBuilderTest {
         WizScannerBuilder.DescriptorImpl descriptor = new WizScannerBuilder.DescriptorImpl();
 
         // Test display name
-        assertNotNull("Display name should not be null",
-                descriptor.getDisplayName());
+        assertNotNull("Display name should not be null", descriptor.getDisplayName());
 
         // Test applicability
-        assertTrue("Should be applicable to FreeStyleProject",
-                descriptor.isApplicable(FreeStyleProject.class));
+        assertTrue("Should be applicable to FreeStyleProject", descriptor.isApplicable(FreeStyleProject.class));
     }
 }
