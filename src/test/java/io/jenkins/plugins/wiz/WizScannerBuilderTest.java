@@ -73,7 +73,7 @@ public class WizScannerBuilderTest {
     }
 
     @Test
-    public void testPerformSuccessful() throws Exception {
+   public void testPerformSuccessful() throws Exception {
         WizScannerBuilder.DescriptorImpl descriptor =
                 j.jenkins.getDescriptorByType(WizScannerBuilder.DescriptorImpl.class);
         FreeStyleProject project = j.createFreeStyleProject();
@@ -91,10 +91,25 @@ public class WizScannerBuilderTest {
         FilePath resultFile = workspace.child("wizscan.json");
         resultFile.write("{}", "UTF-8");
 
-        builder.perform(run, workspace, env, mockLauncher, listener);
+        try {
+            builder.perform(run, workspace, env, mockLauncher, listener);
 
-        assertEquals("test", env.get("WIZ_ENV"));
-        assertFalse("Log should contain output", logOutput.toString().isEmpty());
+            assertEquals("test", env.get("WIZ_ENV"));
+            assertFalse("Log should contain output", logOutput.toString().isEmpty());
+        } finally {
+            // Use Jenkins' built-in cleanup mechanism
+            if (resultFile != null && resultFile.exists()) {
+                resultFile.act(new DeleteFileOnCloseAction());
+            }
+            
+            // Clean up other files using FilePath's built-in methods
+            for (String file : Arrays.asList("wizcli_output", "wizcli_err_output")) {
+                FilePath f = new FilePath(new File(run.getRootDir(), file));
+                if (f.exists()) {
+                    f.act(new DeleteFileOnCloseAction());
+                }
+            }
+        }
     }
 
     @Test
@@ -144,5 +159,15 @@ public class WizScannerBuilderTest {
 
         // Test applicability
         assertTrue("Should be applicable to FreeStyleProject", descriptor.isApplicable(FreeStyleProject.class));
+    }
+
+    private static final class DeleteFileOnCloseAction implements FileCallable<Void> {
+        private static final long serialVersionUID = 1L;
+        
+        @Override
+        public Void invoke(File f, VirtualChannel channel) throws IOException {
+            f.deleteOnExit();
+            return null;
+        }
     }
 }
