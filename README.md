@@ -4,46 +4,44 @@
 
 This Jenkins plugin enables integrate Wiz CLI to detect sensitive data, secrets, misconfigurations, and vulnerabilities in container images, directories and IaC files.
 
-## Getting started
+## Prerequisites
+- Access as an admin to your Jenkins account.
 
-### 1. Generate a Wiz service account key
+## Installation and Setup
 
-To configure this plugin, you will need to generate service account, follow the documentation <a target="_blank" href="https://docs.wiz.io/wiz-docs/docs/set-up-wiz-cli?lng=en#generate-a-wiz-service-account-key">here</a>.
+1. Locate the Wiz CLI link relevant to your OS [here](https://docs.wiz.io/wiz-docs/docs/set-up-wiz-cli?lng=en#download-wiz-cli-to-a-linux-mac-or-windows-host) and store it in a safe place for future use. For example, the Wiz CLI download URL for Linux (AMD64) is https://downloads.wiz.io/wizcli/latest/wizcli-linux-amd64.
+2. In Wiz, generate a service account by [following these steps](https://docs.wiz.io/wiz-docs/docs/set-up-wiz-cli?lng=en#cicd-pipeline-integration).
+3. Log in to your Jenkins account.
+4. Navigate to Manage Jenkins and click Plugins.
+5. On the right menu, click Available plugins and search for "Wiz Scanner" using the top search bar.
+6. Choose the Wiz Scanner and click Install on the top right.
+7. Navigate to Manage Jenkins > System and scroll down to the Wiz section.
+8. Fill in the Client ID, Secret Key (aka Client Secret), and Wiz CLI link that were previously collected.
+9. (GovCloud/FedRAMP tenants only) Fill in the relevant environment variable. [Find your environment variable here](https://docs.wiz.io/wiz-docs/docs/set-up-wiz-cli?lng=en#govcloud-and-fedramp-only-configure-the-wiz_env-environment-variable).
+10. Click Save.
+11. Depending on the type of job, follow these steps:
 
-### 2. Copy Wiz CLI package URL
+#### Freestyle Jobs
+1. On the dashboard, locate a freestyle job and select it.
+2. On the left side menu, navigate to Configure > Build Steps.
+3. Click Add Build Step and select Wiz Scanner.
+4. Insert a Wiz CLI command (without the wizcli argument). [See the Use Wiz CLI page to learn how to build commands](https://docs.wiz.io/wiz-docs/docs/use-wiz-cli).
+<img width="1048" alt="freestyle" src="https://github.com/user-attachments/assets/fc64d8c7-3c5f-407c-8730-780eee8dec11" />
+5. Click Save.
 
-To configure this plugin, you will need to copy Wiz CLI URL according to the OS, follow the documentation <a target="_blank" href="https://docs.wiz.io/wiz-docs/docs/set-up-wiz-cli?lng=en#download-wiz-cli-to-a-linux-mac-or-windows-host">here</a>.
+#### Pipeline Jobs
 
-### 3. Configure the Wiz Jenkins plugin
+1. On the dashboard, locate a pipeline job and select it
+2. On the left side menu, navigate to Configure > Pipeline.
+3. Ensure the Definition is set to Pipeline script.
+4. In the Script section, insert a Wiz CLI command (including the wizcli argument). [See the Use Wiz CLI page to learn how to build commands](https://docs.wiz.io/wiz-docs/docs/use-wiz-cli).
+<img width="1038" alt="pipeline" src="https://github.com/user-attachments/assets/26e070af-bb70-4345-8282-9db520a670e3" />
+5. Click Save.
 
-#### Global configuration
+### Viewing Results
+Run the job by clicking Build Now. When the build completes, scan results can be viewed under the **Wiz Scanner** tab.
+<img width="1075" alt="results" src="https://github.com/user-attachments/assets/4e91743e-4098-48ef-a1f8-f0f3f56d15b0" />
 
-Once the Wiz service account is created in your Wiz account and Wiz CLI URL copied, you will need to provide your Wiz Client ID, Secret Key and Wiz CLI Docker image in order to configure the Jenkins plugin. To configure, navigate to "Manage Jenkins" -> "System", then scroll to the "WIZ" section. Input the Wiz Client ID, Secret Key and Wiz CLI Docker image into the appropriate fields, then click Save.
-##### Note! If you access Wiz from gov.wiz.io or app.wiz.us, you must configure the Wiz Environment field: gov OR fedramp
-<blockquote>
-<details>
-<summary>📷 Show Preview</summary>
-
-![Wiz - Global Settings](docs/global_settings.png)
-
-</details>
-</blockquote>
-
-#### Build Step Configuration
-
-Once the global configuration is complete, you can add the Wiz Scanner build step to your pipelines.
-Provide full custom command-line arguments.
-
-<blockquote>
-<details>
-<summary>📷 Show Preview</summary>
-
-![Wiz Scanner - Build Step](docs/build_step.png)
-
-</details>
-</blockquote>
-
-Once the Wiz Scanner build step is added, it will produce a Wiz Scanner result page.
 
 ## Contributing
 
