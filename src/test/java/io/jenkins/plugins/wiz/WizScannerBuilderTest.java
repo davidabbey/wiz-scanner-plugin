@@ -12,10 +12,13 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
+import hudson.util.Secret;
 import hudson.util.StreamTaskListener;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+
+import net.sf.json.JSONObject;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -118,5 +121,36 @@ public class WizScannerBuilderTest {
 
         // Test applicability
         assertTrue("Should be applicable to FreeStyleProject", descriptor.isApplicable(FreeStyleProject.class));
+    }
+
+    @Test
+    public void testDescriptorConfigurationSaveAndLoad() throws Exception {
+        WizScannerBuilder.DescriptorImpl descriptor =
+                j.jenkins.getDescriptorByType(WizScannerBuilder.DescriptorImpl.class);
+
+        String testClientId = "test-client-id";
+        String testSecretKey = "test-secret-key";
+        String testCliUrl = "https://test.wiz.io/cli";
+        String testEnv = "test-env";
+
+        JSONObject formData = new JSONObject();
+        formData.put("wizClientId", testClientId);
+        formData.put("wizSecretKey", testSecretKey);
+        formData.put("wizCliURL", testCliUrl);
+        formData.put("wizEnv", testEnv);
+
+        descriptor.configure(null, formData);
+
+        assertEquals("Client ID not saved correctly", testClientId, descriptor.getWizClientId());
+        assertEquals("Secret key not saved correctly", testSecretKey, Secret.toString(descriptor.getWizSecretKey()));
+        assertEquals("CLI URL not saved correctly", testCliUrl, descriptor.getWizCliURL());
+        assertEquals("Environment not saved correctly", testEnv, descriptor.getWizEnv());
+
+        WizScannerBuilder.DescriptorImpl newDescriptor = new WizScannerBuilder.DescriptorImpl();
+
+        assertEquals("Client ID not loaded correctly", testClientId, newDescriptor.getWizClientId());
+        assertEquals("Secret key not loaded correctly", testSecretKey, Secret.toString(newDescriptor.getWizSecretKey()));
+        assertEquals("CLI URL not loaded correctly", testCliUrl, newDescriptor.getWizCliURL());
+        assertEquals("Environment not loaded correctly", testEnv, newDescriptor.getWizEnv());
     }
 }
