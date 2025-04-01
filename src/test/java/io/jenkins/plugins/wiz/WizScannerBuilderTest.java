@@ -17,7 +17,6 @@ import hudson.util.StreamTaskListener;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-
 import net.sf.json.JSONObject;
 import org.junit.Before;
 import org.junit.Rule;
@@ -149,7 +148,8 @@ public class WizScannerBuilderTest {
         WizScannerBuilder.DescriptorImpl newDescriptor = new WizScannerBuilder.DescriptorImpl();
 
         assertEquals("Client ID not loaded correctly", testClientId, newDescriptor.getWizClientId());
-        assertEquals("Secret key not loaded correctly", testSecretKey, Secret.toString(newDescriptor.getWizSecretKey()));
+        assertEquals(
+                "Secret key not loaded correctly", testSecretKey, Secret.toString(newDescriptor.getWizSecretKey()));
         assertEquals("CLI URL not loaded correctly", testCliUrl, newDescriptor.getWizCliURL());
         assertEquals("Environment not loaded correctly", testEnv, newDescriptor.getWizEnv());
     }
