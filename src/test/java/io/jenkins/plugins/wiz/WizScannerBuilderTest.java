@@ -124,33 +124,33 @@ public class WizScannerBuilderTest {
 
     @Test
     public void testDescriptorConfigurationSaveAndLoad() throws Exception {
-        WizScannerBuilder.DescriptorImpl descriptor =
+        WizScannerBuilder.DescriptorImpl sut =
                 j.jenkins.getDescriptorByType(WizScannerBuilder.DescriptorImpl.class);
 
-        String testClientId = "test-client-id";
-        String testSecretKey = "test-secret-key";
-        String testCliUrl = "https://test.wiz.io/cli";
-        String testEnv = "test-env";
+        String expectedClientId = "test-client-id";
+        String expectedSecretKey = "test-secret-key";
+        String expectedCliUrl = "https://test.wiz.io/cli";
+        String expectedEnv = "test-env";
 
         JSONObject formData = new JSONObject();
-        formData.put("wizClientId", testClientId);
-        formData.put("wizSecretKey", testSecretKey);
-        formData.put("wizCliURL", testCliUrl);
-        formData.put("wizEnv", testEnv);
+        formData.put("wizClientId", expectedClientId);
+        formData.put("wizSecretKey", expectedSecretKey);
+        formData.put("wizCliURL", expectedCliUrl);
+        formData.put("wizEnv", expectedEnv);
 
-        descriptor.configure(null, formData);
+        sut.configure(null, formData);
 
-        assertEquals("Client ID not saved correctly", testClientId, descriptor.getWizClientId());
-        assertEquals("Secret key not saved correctly", testSecretKey, Secret.toString(descriptor.getWizSecretKey()));
-        assertEquals("CLI URL not saved correctly", testCliUrl, descriptor.getWizCliURL());
-        assertEquals("Environment not saved correctly", testEnv, descriptor.getWizEnv());
+        assertEquals("Client ID not saved correctly", expectedClientId, sut.getWizClientId());
+        assertEquals("Secret key not saved correctly", expectedSecretKey, Secret.toString(sut.getWizSecretKey()));
+        assertEquals("CLI URL not saved correctly", expectedCliUrl, sut.getWizCliURL());
+        assertEquals("Environment not saved correctly", expectedEnv, sut.getWizEnv());
 
-        WizScannerBuilder.DescriptorImpl newDescriptor = new WizScannerBuilder.DescriptorImpl();
+        sut = new WizScannerBuilder.DescriptorImpl();
 
-        assertEquals("Client ID not loaded correctly", testClientId, newDescriptor.getWizClientId());
+        assertEquals("Client ID not loaded correctly", expectedClientId, sut.getWizClientId());
         assertEquals(
-                "Secret key not loaded correctly", testSecretKey, Secret.toString(newDescriptor.getWizSecretKey()));
-        assertEquals("CLI URL not loaded correctly", testCliUrl, newDescriptor.getWizCliURL());
-        assertEquals("Environment not loaded correctly", testEnv, newDescriptor.getWizEnv());
+                "Secret key not loaded correctly", expectedSecretKey, Secret.toString(sut.getWizSecretKey()));
+        assertEquals("CLI URL not loaded correctly", expectedCliUrl, sut.getWizCliURL());
+        assertEquals("Environment not loaded correctly", expectedEnv, sut.getWizEnv());
     }
 }
