@@ -26,7 +26,7 @@ This Jenkins plugin enables integrate Wiz CLI to detect sensitive data, secrets,
 2. On the left side menu, navigate to Configure > Build Steps.
 3. Click Add Build Step and select Wiz Scanner.
 4. Insert a Wiz CLI command (without the wizcli argument). [See the Use Wiz CLI page to learn how to build commands](https://docs.wiz.io/wiz-docs/docs/use-wiz-cli).
-<img width="1048" alt="freestyle" src="docs/freestyle_jobs.png"/>
+<img width="1048" alt="freestyle" src="docs/freestyle_jobs.png" />
 5. Click Save.
 
 #### Pipeline Jobs
