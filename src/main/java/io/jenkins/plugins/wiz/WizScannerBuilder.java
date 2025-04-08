@@ -174,6 +174,10 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
         private String wizCliURL;
         private String wizEnv;
 
+        public DescriptorImpl() {
+            load();
+        }
+
         @RequirePOST
         @SuppressFBWarnings(value = "SECURITY")
         public FormValidation doCheckUserInput(@QueryParameter String value) {

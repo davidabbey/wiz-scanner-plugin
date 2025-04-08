@@ -12,10 +12,12 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
+import hudson.util.Secret;
 import hudson.util.StreamTaskListener;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import net.sf.json.JSONObject;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -118,5 +120,35 @@ public class WizScannerBuilderTest {
 
         // Test applicability
         assertTrue("Should be applicable to FreeStyleProject", descriptor.isApplicable(FreeStyleProject.class));
+    }
+
+    @Test
+    public void testDescriptorConfigurationSaveAndLoad() throws Exception {
+        WizScannerBuilder.DescriptorImpl sut = j.jenkins.getDescriptorByType(WizScannerBuilder.DescriptorImpl.class);
+
+        String expectedClientId = "test-client-id";
+        String expectedSecretKey = "test-secret-key";
+        String expectedCliUrl = "https://test.wiz.io/cli";
+        String expectedEnv = "test-env";
+
+        JSONObject formData = new JSONObject();
+        formData.put("wizClientId", expectedClientId);
+        formData.put("wizSecretKey", expectedSecretKey);
+        formData.put("wizCliURL", expectedCliUrl);
+        formData.put("wizEnv", expectedEnv);
+
+        sut.configure(null, formData);
+
+        assertEquals("Client ID not saved correctly", expectedClientId, sut.getWizClientId());
+        assertEquals("Secret key not saved correctly", expectedSecretKey, Secret.toString(sut.getWizSecretKey()));
+        assertEquals("CLI URL not saved correctly", expectedCliUrl, sut.getWizCliURL());
+        assertEquals("Environment not saved correctly", expectedEnv, sut.getWizEnv());
+
+        sut = new WizScannerBuilder.DescriptorImpl();
+
+        assertEquals("Client ID not loaded correctly", expectedClientId, sut.getWizClientId());
+        assertEquals("Secret key not loaded correctly", expectedSecretKey, Secret.toString(sut.getWizSecretKey()));
+        assertEquals("CLI URL not loaded correctly", expectedCliUrl, sut.getWizCliURL());
+        assertEquals("Environment not loaded correctly", expectedEnv, sut.getWizEnv());
     }
 }
