@@ -124,8 +124,7 @@ public class WizScannerBuilderTest {
 
     @Test
     public void testDescriptorConfigurationSaveAndLoad() throws Exception {
-        WizScannerBuilder.DescriptorImpl sut =
-                j.jenkins.getDescriptorByType(WizScannerBuilder.DescriptorImpl.class);
+        WizScannerBuilder.DescriptorImpl sut = j.jenkins.getDescriptorByType(WizScannerBuilder.DescriptorImpl.class);
 
         String expectedClientId = "test-client-id";
         String expectedSecretKey = "test-secret-key";
@@ -148,8 +147,7 @@ public class WizScannerBuilderTest {
         sut = new WizScannerBuilder.DescriptorImpl();
 
         assertEquals("Client ID not loaded correctly", expectedClientId, sut.getWizClientId());
-        assertEquals(
-                "Secret key not loaded correctly", expectedSecretKey, Secret.toString(sut.getWizSecretKey()));
+        assertEquals("Secret key not loaded correctly", expectedSecretKey, Secret.toString(sut.getWizSecretKey()));
         assertEquals("CLI URL not loaded correctly", expectedCliUrl, sut.getWizCliURL());
         assertEquals("Environment not loaded correctly", expectedEnv, sut.getWizEnv());
     }
