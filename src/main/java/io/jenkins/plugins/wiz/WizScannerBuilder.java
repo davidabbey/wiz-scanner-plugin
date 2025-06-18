@@ -22,6 +22,8 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.interceptor.RequirePOST;
@@ -195,6 +197,26 @@ public class WizScannerBuilder extends Builder implements SimpleBuildStep {
         @Override
         public @NonNull String getDisplayName() {
             return Messages.WizScannerBuilder_DescriptorImpl_DisplayName();
+        }
+
+        // setters
+        @DataBoundSetter
+        public void setWizClientId(String wizClientId) {
+            this.wizClientId = wizClientId;
+        }
+        @DataBoundSetter
+        public void setWizSecretKey(Secret wizSecretKey) {
+            this.wizSecretKey = wizSecretKey;
+        }
+
+        @DataBoundSetter
+        public void setWizCliURL(String wizCliURL) {
+            this.wizCliURL = wizCliURL;
+        }
+
+        @DataBoundSetter
+        public void setWizEnv(String wizEnv) {
+            this.wizEnv = wizEnv;
         }
 
         @Override
